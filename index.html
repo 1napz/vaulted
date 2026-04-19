@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0a0a0a; color: #e5e5e5; }
-    .card { background-color: #171717; border: 1px solid #262626; }
-    .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
-    .tab-inactive { color: #9ca3af; }
-    .progress-bar { transition: width 0.3s ease; }
+   .card { background-color: #171717; border: 1px solid #262626; }
+   .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
+   .tab-inactive { color: #9ca3af; }
+   .progress-bar { transition: width 0.3s ease; }
     </style>
 </head>
 <body class="font-sans">
@@ -33,11 +33,41 @@
             <div class="card rounded-lg p-6 mb-6">
                 <h2 class="text-xl font-bold text-white mb-4">สร้างวิดีโอจากรูปด้วย Meta AI</h2>
 
+                <!-- ขั้นตอนที่ 1: อัปโหลด -->
                 <label class="block mb-2 text-sm font-medium text-gray-300">1. อัปโหลดรูปสินค้า 1-5 รูป</label>
                 <input type="file" id="imageUpload" accept="image/*" multiple class="block w-full text-sm text-gray-400 mb-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700">
                 <p id="fileCount" class="text-xs text-gray-500 mb-4">ยังไม่ได้เลือกรูป</p>
-
                 <div id="preview" class="grid grid-cols-5 gap-2 mb-4"></div>
+
+                <!-- ขั้นตอนที่ 2: ผลวิเคราะห์รูป ใหม่ -->
+                <div id="analysisCard" class="hidden bg-blue-950 border border-blue-800 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-sm font-bold text-blue-300">🔍 ผลวิเคราะห์จากรูปภาพ</h3>
+                        <button onclick="toggleManualEdit()" id="editBtn" class="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded">แก้ไขเอง</button>
+                    </div>
+                    <div id="analysisResult" class="text-sm text-white mb-3">
+                        <div>สินค้า: <span id="detectedName" class="font-bold">-</span></div>
+                        <div>หมวดหมู่: <span id="detectedCategory" class="font-bold">-</span></div>
+                    </div>
+
+                    <!-- ฟอร์มแก้ไขเอง ซ่อนไว้ก่อน -->
+                    <div id="manualEditForm" class="hidden border-t border-blue-800 pt-3 mt-3">
+                        <label class="block text-xs text-gray-400 mb-1">ชื่อสินค้า</label>
+                        <input type="text" id="manualName" class="w-full bg-gray-900 text-white text-sm rounded px-2 py-1 mb-2 border border-gray-700" placeholder="เช่น Nike Air Jordan 1">
+
+                        <label class="block text-xs text-gray-400 mb-1">หมวดหมู่</label>
+                        <select id="manualCategory" class="w-full bg-gray-900 text-white text-sm rounded px-2 py-1 border border-gray-700">
+                            <option value="shoes">รองเท้า</option>
+                            <option value="headphones">หูฟัง</option>
+                            <option value="watch">นาฬิกา</option>
+                            <option value="camera">กล้อง</option>
+                            <option value="fashion">แฟชั่น/เสื้อผ้า</option>
+                            <option value="beauty">บิวตี้/สกินแคร์</option>
+                            <option value="general">ทั่วไป</option>
+                        </select>
+                        <button onclick="saveManualEdit()" class="mt-2 text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">บันทึก</button>
+                    </div>
+                </div>
 
                 <button onclick="generateVideo()" id="genBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600 disabled:cursor-not-allowed">
                     Generate
@@ -57,12 +87,6 @@
             </div>
 
             <div id="result" class="hidden">
-                <!-- เพิ่มกล่องแสดงผลวิเคราะห์สินค้า -->
-                <div class="card rounded-lg p-4 mb-6 bg-blue-950 border-blue-800">
-                    <h3 class="text-sm font-bold text-blue-300 mb-2">🔍 ผลวิเคราะห์สินค้า</h3>
-                    <div class="text-sm text-white" id="analysisOutput">กำลังวิเคราะห์...</div>
-                </div>
-
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="card rounded-lg p-6">
                         <div class="flex justify-between items-center mb-3">
@@ -99,9 +123,8 @@
         ];
 
         let uploadedFiles = [];
-        let detectedProduct = { name: 'สินค้า', category: 'general', keywords: [] };
+        let detectedProduct = { name: 'สินค้า', category: 'general' };
 
-        // Database แฮชแท็กแยกตามหมวดหมู่
         const hashtagDB = {
             shoes: ['#รองเท้า', '#sneakerhead', '#outfit', '#สตรีทแฟชั่น', '#ของมันต้องมี'],
             headphones: ['#หูฟัง', '#gadget', '#เพลง', '#เกมมิ่ง', '#unbox'],
@@ -110,6 +133,11 @@
             fashion: ['#แฟชั่น', '#outfit', '#แต่งตัว', '#ป้ายยา', '#ของดีบอกต่อ'],
             beauty: ['#สกินแคร์', '#เครื่องสำอาง', '#รีวิวบิวตี้', '#howto', '#glowup'],
             general: ['#TikTokMadeMeBuyIt', '#ป้ายยา', '#รีวิวของดี', '#ของมันต้องมี', '#ถูกและดี']
+        };
+
+        const categoryNames = {
+            shoes: 'รองเท้า/แฟชั่น', headphones: 'หูฟัง/แกดเจ็ต', watch: 'นาฬิกา/แอคเซสเซอรี่',
+            camera: 'กล้อง/อุปกรณ์', fashion: 'แฟชั่น/เสื้อผ้า', beauty: 'บิวตี้/สกินแคร์', general: 'ทั่วไป'
         };
 
         function switchTab(tab) {
@@ -128,6 +156,7 @@
             });
         }
 
+        // ใหม่: วิเคราะห์รูปทันทีที่อัปโหลด
         document.getElementById('imageUpload').onchange = function(e) {
             const preview = document.getElementById('preview');
             const fileCount = document.getElementById('fileCount');
@@ -136,12 +165,13 @@
 
             if (uploadedFiles.length === 0) {
                 fileCount.innerText = 'ยังไม่ได้เลือกรูป';
+                document.getElementById('analysisCard').classList.add('hidden');
                 updateStatus('', true);
                 return;
             }
 
-            fileCount.innerText = `เลือกแล้ว ${uploadedFiles.length} รูป พร้อม Generate`;
-            updateStatus(`เลือกรูปเสร็จแล้ว ${uploadedFiles.length} รูป`, false);
+            fileCount.innerText = `เลือกแล้ว ${uploadedFiles.length} รูป`;
+            updateStatus(`กำลังวิเคราะห์รูป...`, false);
 
             uploadedFiles.forEach(file => {
                 const reader = new FileReader();
@@ -150,7 +180,57 @@
                 }
                 reader.readAsDataURL(file);
             });
+
+            // วิเคราะห์ทันทีหลังเลือกไฟล์
+            setTimeout(() => {
+                analyzeProduct();
+                document.getElementById('analysisCard').classList.remove('hidden');
+                updateStatus('วิเคราะห์เสร็จแล้ว พร้อม Generate', false);
+                setTimeout(() => updateStatus('', true), 2000);
+            }, 500);
         };
+
+        function analyzeProduct() {
+            const fileName = uploadedFiles[0].name.toLowerCase();
+            let category = 'general';
+            let name = uploadedFiles[0].name.split('.')[0].replace(/[-_]/g, ' ');
+
+            if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas') || fileName.includes('รองเท้า')) {
+                category = 'shoes';
+            } else if (fileName.includes('headphone') || fileName.includes('sony') || fileName.includes('หูฟัง')) {
+                category = 'headphones';
+            } else if (fileName.includes('watch') || fileName.includes('นาฬิกา')) {
+                category = 'watch';
+            } else if (fileName.includes('camera') || fileName.includes('กล้อง')) {
+                category = 'camera';
+            } else if (fileName.includes('cream') || fileName.includes('serum') || fileName.includes('ครีม')) {
+                category = 'beauty';
+            } else if (fileName.includes('shirt') || fileName.includes('dress') || fileName.includes('เสื้อ')) {
+                category = 'fashion';
+            }
+
+            detectedProduct = { name, category };
+            document.getElementById('detectedName').innerText = name;
+            document.getElementById('detectedCategory').innerText = categoryNames[category];
+            document.getElementById('manualName').value = name;
+            document.getElementById('manualCategory').value = category;
+        }
+
+        function toggleManualEdit() {
+            const form = document.getElementById('manualEditForm');
+            form.classList.toggle('hidden');
+            document.getElementById('editBtn').innerText = form.classList.contains('hidden')? 'แก้ไขเอง' : 'ยกเลิก';
+        }
+
+        function saveManualEdit() {
+            detectedProduct.name = document.getElementById('manualName').value || 'สินค้า';
+            detectedProduct.category = document.getElementById('manualCategory').value;
+            document.getElementById('detectedName').innerText = detectedProduct.name;
+            document.getElementById('detectedCategory').innerText = categoryNames[detectedProduct.category];
+            toggleManualEdit();
+            updateStatus('บันทึกรายละเอียดแล้ว', false);
+            setTimeout(() => updateStatus('', true), 2000);
+        }
 
         function updateStatus(msg, hide = false) {
             const box = document.getElementById('statusBox');
@@ -160,28 +240,6 @@
                 box.innerText = msg;
                 box.classList.remove('hidden');
             }
-        }
-
-        // ฟังก์ชันใหม่: วิเคราะห์รูปจากชื่อไฟล์
-        function analyzeProduct() {
-            const fileName = uploadedFiles[0].name.toLowerCase();
-            let category = 'general';
-            let name = uploadedFiles[0].name.split('.')[0];
-
-            if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas') || fileName.includes('รองเท้า')) {
-                category = 'shoes'; name = 'รองเท้าแฟชั่น';
-            } else if (fileName.includes('headphone') || fileName.includes('sony') || fileName.includes('หูฟัง')) {
-                category = 'headphones'; name = 'หูฟังไร้สาย';
-            } else if (fileName.includes('watch') || fileName.includes('นาฬิกา')) {
-                category = 'watch'; name = 'นาฬิกา Smart Watch';
-            } else if (fileName.includes('camera') || fileName.includes('กล้อง')) {
-                category = 'camera'; name = 'กล้องถ่ายรูป';
-            } else if (fileName.includes('cream') || fileName.includes('serum') || fileName.includes('ครีม')) {
-                category = 'beauty'; name = 'สกินแคร์';
-            }
-
-            detectedProduct = { name, category, keywords: hashtagDB[category] };
-            return `ตรวจพบ: ${name} | หมวดหมู่: ${category.toUpperCase()} | จะใช้แฮชแท็กเฉพาะทางให้`;
         }
 
         function generateVideo() {
@@ -196,24 +254,17 @@
 
             let progress = 0;
             const steps = [
-                '1/5 กำลังอัปโหลดรูป...',
-                '2/5 กำลังวิเคราะห์สินค้าในรูป...',
-                '3/5 กำลังสร้าง Prompt ที่เหมาะกับสินค้า...',
-                '4/5 กำลังเขียนแคปชั่น + เลือก 5 Hashtags...',
-                '5/5 เสร็จสิ้น!'
+                '1/4 กำลังใช้ข้อมูลที่วิเคราะห์ได้...',
+                '2/4 กำลังสร้าง Prompt เฉพาะสินค้า...',
+                '3/4 กำลังเขียนแคปชั่น + เลือก 5 Hashtags...',
+                '4/4 เสร็จสิ้น!'
             ];
 
             const interval = setInterval(() => {
-                progress += 20;
+                progress += 25;
                 document.getElementById('progressBar').style.width = progress + '%';
                 document.getElementById('progressText').innerText = progress + '%';
-                updateStatus(steps[progress/20 - 1], false);
-
-                // รันวิเคราะห์ตอนขั้นตอนที่ 2
-                if (progress === 40) {
-                    const analysisText = analyzeProduct();
-                    document.getElementById('analysisOutput').innerText = analysisText;
-                }
+                updateStatus(steps[progress/25 - 1], false);
 
                 if (progress >= 100) {
                     clearInterval(interval);
@@ -222,16 +273,17 @@
                     updateStatus('สร้างเสร็จแล้ว คัดลอกไปใช้ได้เลย', false);
                     setTimeout(() => updateStatus('', true), 3000);
                 }
-            }, 600);
+            }, 500);
         }
 
         function showResults() {
-            const { name, category, keywords } = detectedProduct;
+            const { name, category } = detectedProduct;
+            const keywords = hashtagDB[category];
 
-            const promptText = `Create a 5-second cinematic product video. Subject: ${name}. Camera slowly orbits 360 degrees around product, then zoom in on key detail. Studio lighting, 4k, smooth motion, shallow depth of field. Premium commercial style.`;
+            const promptText = `Create a 5-second cinematic product video. Subject: ${name}, Category: ${categoryNames[category]}. Camera slowly orbits 360 degrees around product, then zoom in on key detail. Studio lighting, 4k, smooth motion, premium commercial style.`;
             document.getElementById('promptOutput').innerText = promptText;
 
-            const tiktokText = `เจอของดีอีกแล้ว! ${name} ตัวนี้คือที่สุด 📸✨\nใครโดนป้ายยาแล้ว เม้น "โดน" มาหน่อย\n.\n#${name.replace(/\s/g,'')} ${keywords.join(' ')}`;
+            const tiktokText = `เจอของดี ${categoryNames[category]}! ${name} ตัวนี้คือที่สุด 📸✨\nใครโดนป้ายยาแล้ว เม้น "โดน" มาหน่อย\n.\n#${name.replace(/\s/g,'')} ${keywords.join(' ')}`;
             document.getElementById('tiktokOutput').innerText = tiktokText;
 
             document.getElementById('labelViews').innerText = Math.floor(Math.random() * 1000 + 100);
