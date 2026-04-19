@@ -8,23 +8,31 @@
     <style>
         body { background-color: #0a0a0a; color: #e5e5e5; }
         .card { background-color: #171717; border: 1px solid #262626; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
+        .tab-inactive { color: #9ca3af; }
     </style>
 </head>
 <body class="font-sans">
     <div class="container mx-auto px-4 py-8">
-        <header class="mb-8">
+        <header class="mb-6">
             <h1 class="text-3xl font-bold text-white">Vaulted</h1>
             <p class="text-gray-400">AI Generation Vault - Static Mode</p>
         </header>
 
+        <!-- Tabs -->
+        <div class="flex gap-6 border-b border-gray-800 mb-6">
+            <button onclick="switchTab('image')" id="tab-image" class="pb-3 tab-active">Image Generation</button>
+            <button onclick="switchTab('video')" id="tab-video" class="pb-3 tab-inactive">Image to Video</button>
+        </div>
+
+        <!-- Grid -->
         <main id="grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- การ์ดจะถูกใส่ด้วย JS -->
         </main>
     </div>
 
     <script>
-        // ข้อมูล Mock ไม่ต้องต่อ Database
-        const mockData = [
+        // Tab 1: Image Generation เดิม
+        const imageData = [
             {
                 product_name: 'Nike Air Max Test',
                 image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c',
@@ -51,49 +59,79 @@
                 gen_time_sec: 22,
                 views: 450,
                 commission: 120.00
+            }
+        ];
+
+        // Tab 2: Image to Video ใหม่
+        const videoData = [
+            {
+                product_name: 'Nike Air Max - Spin',
+                image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c',
+                prompt: '360 degree rotation, smooth spin, studio lighting, 4k',
+                ai_model: 'Runway Gen-3',
+                gen_time_sec: 45,
+                views: 512,
+                commission: 150.00,
+                video_url: 'https://example.com/video1.mp4'
             },
             {
-                product_name: 'LEGO Bonsai Tree',
-                image_url: 'https://images.unsplash.com/photo-1611605698335-8b1569810432',
-                prompt: 'flat lay, pastel background, cozy',
-                ai_model: 'Stable Diffusion',
-                gen_time_sec: 18,
-                views: 89,
-                commission: 15.25
-            },
-            {
-                product_name: 'Fujifilm X100V',
-                image_url: 'https://images.unsplash.com/photo-1510127034890-ba27508e9f1c',
-                prompt: 'street photography style, bokeh',
-                ai_model: 'Meta AI',
-                gen_time_sec: 10,
-                views: 300,
-                commission: 210.00
+                product_name: 'Sony Headphones - Unbox',
+                image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+                prompt: 'unboxing animation, box opens slowly, cinematic',
+                ai_model: 'Pika 1.5',
+                gen_time_sec: 60,
+                views: 380,
+                commission: 210.00,
+                video_url: 'https://example.com/video2.mp4'
             }
         ];
 
         const grid = document.getElementById('grid');
-        
-        mockData.forEach(item => {
-            const card = `
-                <div class="card rounded-lg overflow-hidden shadow-lg">
-                    <img src="${item.image_url}" alt="${item.product_name}" class="w-full h-48 object-cover">
-                    <div class="p-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <h2 class="text-lg font-bold text-white">${item.product_name}</h2>
-                            <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">${item.ai_model}</span>
-                        </div>
-                        <p class="text-sm text-gray-400 mb-3 h-10">${item.prompt}</p>
-                        <div class="flex justify-between text-xs text-gray-500 border-t border-gray-700 pt-3">
-                            <span>⏱️ ${item.gen_time_sec}s</span>
-                            <span>👁️ ${item.views} views</span>
-                            <span class="text-green-400 font-bold">$${item.commission}</span>
+        let currentTab = 'image';
+
+        function renderCards(data, type) {
+            grid.innerHTML = '';
+            data.forEach(item => {
+                const videoBadge = type === 'video' ? `<span class="absolute top-2 right-2 text-xs bg-red-600 text-white px-2 py-1 rounded">VIDEO</span>` : '';
+                const videoLink = type === 'video' && item.video_url ? `<a href="${item.video_url}" target="_blank" class="text-blue-400 text-xs underline mt-2 inline-block">▶️ ดูวิดีโอ</a>` : '';
+                
+                const card = `
+                    <div class="card rounded-lg overflow-hidden shadow-lg relative">
+                        ${videoBadge}
+                        <img src="${item.image_url}" alt="${item.product_name}" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h2 class="text-lg font-bold text-white">${item.product_name}</h2>
+                                <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">${item.ai_model}</span>
+                            </div>
+                            <p class="text-sm text-gray-400 mb-3 h-10">${item.prompt}</p>
+                            ${videoLink}
+                            <div class="flex justify-between text-xs text-gray-500 border-t border-gray-700 pt-3 mt-3">
+                                <span>⏱️ ${item.gen_time_sec}s</span>
+                                <span>👁️ ${item.views} views</span>
+                                <span class="text-green-400 font-bold">$${item.commission}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            grid.innerHTML += card;
-        });
+                `;
+                grid.innerHTML += card;
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-image').className = tab === 'image' ? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            document.getElementById('tab-video').className = tab === 'video' ? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            
+            if(tab === 'image') {
+                renderCards(imageData, 'image');
+            } else {
+                renderCards(videoData, 'video');
+            }
+        }
+
+        // โหลดครั้งแรก
+        switchTab('image');
     </script>
 </body>
 </html>
