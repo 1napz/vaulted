@@ -10,94 +10,126 @@
         .card { background-color: #171717; border: 1px solid #262626; }
         .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
         .tab-inactive { color: #9ca3af; }
+        .progress-bar { transition: width 0.3s ease; }
     </style>
 </head>
 <body class="font-sans">
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="mb-6">
             <h1 class="text-3xl font-bold text-white">Vaulted</h1>
-            <p class="text-gray-400">AI Generation Vault - Static Mode</p>
+            <p class="text-gray-400">AI Generation Vault</p>
         </header>
 
         <!-- Tabs -->
         <div class="flex gap-6 border-b border-gray-800 mb-6">
-            <button onclick="switchTab('image')" id="tab-image" class="pb-3 tab-active">Image Generation</button>
-            <button onclick="switchTab('video')" id="tab-video" class="pb-3 tab-inactive">Image to Video</button>
+            <button onclick="switchTab('image')" id="tab-image" class="pb-3 tab-inactive">Image Generation</button>
+            <button onclick="switchTab('video')" id="tab-video" class="pb-3 tab-active">Image to Video</button>
         </div>
 
-        <!-- Grid -->
-        <main id="grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        </main>
+        <!-- Tab Content: Image -->
+        <div id="content-image" class="hidden">
+            <main id="grid-image" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></main>
+        </div>
+
+        <!-- Tab Content: Video Generator -->
+        <div id="content-video" class="">
+            <div class="card rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-4">สร้างวิดีโอจากรูปด้วย Meta AI</h2>
+                
+                <!-- Upload 1-5 รูป -->
+                <label class="block mb-2 text-sm font-medium text-gray-300">1. อัปโหลดรูปสินค้า 1-5 รูป</label>
+                <input type="file" id="imageUpload" accept="image/*" multiple class="block w-full text-sm text-gray-400 mb-4
+                    file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                
+                <div id="preview" class="grid grid-cols-5 gap-2 mb-4"></div>
+
+                <!-- ปุ่ม Gen -->
+                <button onclick="generateVideo()" id="genBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    สร้าง Prompt + โพสต์ TikTok
+                </button>
+
+                <!-- หลอดความคืบหน้า -->
+                <div id="progressWrapper" class="hidden mt-4">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm text-gray-400">กำลังสร้าง...</span>
+                        <span id="progressText" class="text-sm text-gray-400">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2.5">
+                        <div id="progressBar" class="progress-bar bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ผลลัพธ์ -->
+            <div id="result" class="hidden">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Prompt ที่แนะนำ -->
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-white mb-3">Prompt สำหรับ Meta AI</h3>
+                        <div class="bg-black rounded p-3 text-sm text-green-400 mb-3 font-mono" id="promptOutput"></div>
+                        <button onclick="copyPrompt()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Copy Prompt</button>
+                    </div>
+
+                    <!-- โพสต์ Tiktok -->
+                    <div class="card rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-white mb-3">แคปชั่น TikTok + 5 Hashtags</h3>
+                        <div class="bg-black rounded p-3 text-sm text-white mb-3" id="tiktokOutput"></div>
+                        <button onclick="copyTiktok()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Copy Caption</button>
+                    </div>
+                </div>
+
+                <!-- Label ประสิทธิภาพ -->
+                <div class="card rounded-lg p-6 mt-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Label ประสิทธิภาพ - อัปเดทเรียลไทม์</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-black rounded p-3">
+                            <div class="text-2xl font-bold text-blue-400" id="labelViews">0</div>
+                            <div class="text-xs text-gray-500">ยอดวิว</div>
+                        </div>
+                        <div class="bg-black rounded p-3">
+                            <div class="text-2xl font-bold text-green-400" id="labelSales">$0</div>
+                            <div class="text-xs text-gray-500">ยอดขาย</div>
+                        </div>
+                        <div class="bg-black rounded p-3">
+                            <div class="text-2xl font-bold text-yellow-400" id="labelCTR">0%</div>
+                            <div class="text-xs text-gray-500">CTR</div>
+                        </div>
+                        <div class="bg-black rounded p-3">
+                            <div class="text-2xl font-bold text-purple-400" id="labelTime">0s</div>
+                            <div class="text-xs text-gray-500">เวลา Gen</div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3">*ค่านี้เป็น Mock ตอนนี้ ต่อไปจะดึงจาก DB จริงหลังวิดีโอเผยแพร่</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Tab 1: Image Generation เดิม
+        // ข้อมูล Tab Image เดิม
         const imageData = [
-            {
-                product_name: 'Nike Air Max Test',
-                image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c',
-                prompt: 'photorealistic, studio lighting, 8k',
-                ai_model: 'Meta AI',
-                gen_time_sec: 15,
-                views: 234,
-                commission: 35.50
-            },
-            {
-                product_name: 'Sony WH-1000XM5',
-                image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
-                prompt: 'minimalist product shot, white background',
-                ai_model: 'Gemini',
-                gen_time_sec: 8,
-                views: 120,
-                commission: 89.00
-            },
-            {
-                product_name: 'Apple Watch Ultra 2',
-                image_url: 'https://images.unsplash.com/photo-1558126319-c4cfecad1d4e',
-                prompt: 'outdoor adventure style, on a rock',
-                ai_model: 'Midjourney',
-                gen_time_sec: 22,
-                views: 450,
-                commission: 120.00
-            }
+            { product_name: 'Nike Air Max Test', image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c', prompt: 'photorealistic, studio lighting, 8k', ai_model: 'Meta AI', gen_time_sec: 15, views: 234, commission: 35.50 },
+            { product_name: 'Sony WH-1000XM5', image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e', prompt: 'minimalist product shot, white background', ai_model: 'Gemini', gen_time_sec: 8, views: 120, commission: 89.00 }
         ];
 
-        // Tab 2: Image to Video ใหม่
-        const videoData = [
-            {
-                product_name: 'Nike Air Max - Spin',
-                image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c',
-                prompt: '360 degree rotation, smooth spin, studio lighting, 4k',
-                ai_model: 'Runway Gen-3',
-                gen_time_sec: 45,
-                views: 512,
-                commission: 150.00,
-                video_url: 'https://example.com/video1.mp4'
-            },
-            {
-                product_name: 'Sony Headphones - Unbox',
-                image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
-                prompt: 'unboxing animation, box opens slowly, cinematic',
-                ai_model: 'Pika 1.5',
-                gen_time_sec: 60,
-                views: 380,
-                commission: 210.00,
-                video_url: 'https://example.com/video2.mp4'
-            }
-        ];
+        let uploadedFiles = [];
 
-        const grid = document.getElementById('grid');
-        let currentTab = 'image';
+        // สลับ Tab
+        function switchTab(tab) {
+            document.getElementById('tab-image').className = tab === 'image' ? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            document.getElementById('tab-video').className = tab === 'video' ? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            document.getElementById('content-image').className = tab === 'image' ? '' : 'hidden';
+            document.getElementById('content-video').className = tab === 'video' ? '' : 'hidden';
+            if(tab === 'image') renderImageTab();
+        }
 
-        function renderCards(data, type) {
+        // แสดง Tab Image
+        function renderImageTab() {
+            const grid = document.getElementById('grid-image');
             grid.innerHTML = '';
-            data.forEach(item => {
-                const videoBadge = type === 'video' ? `<span class="absolute top-2 right-2 text-xs bg-red-600 text-white px-2 py-1 rounded">VIDEO</span>` : '';
-                const videoLink = type === 'video' && item.video_url ? `<a href="${item.video_url}" target="_blank" class="text-blue-400 text-xs underline mt-2 inline-block">▶️ ดูวิดีโอ</a>` : '';
-                
-                const card = `
-                    <div class="card rounded-lg overflow-hidden shadow-lg relative">
-                        ${videoBadge}
+            imageData.forEach(item => {
+                grid.innerHTML += `
+                    <div class="card rounded-lg overflow-hidden shadow-lg">
                         <img src="${item.image_url}" alt="${item.product_name}" class="w-full h-48 object-cover">
                         <div class="p-4">
                             <div class="flex justify-between items-start mb-2">
@@ -105,33 +137,27 @@
                                 <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">${item.ai_model}</span>
                             </div>
                             <p class="text-sm text-gray-400 mb-3 h-10">${item.prompt}</p>
-                            ${videoLink}
-                            <div class="flex justify-between text-xs text-gray-500 border-t border-gray-700 pt-3 mt-3">
+                            <div class="flex justify-between text-xs text-gray-500 border-t border-gray-700 pt-3">
                                 <span>⏱️ ${item.gen_time_sec}s</span>
                                 <span>👁️ ${item.views} views</span>
                                 <span class="text-green-400 font-bold">$${item.commission}</span>
                             </div>
                         </div>
-                    </div>
-                `;
-                grid.innerHTML += card;
+                    </div>`;
             });
         }
 
-        function switchTab(tab) {
-            currentTab = tab;
-            document.getElementById('tab-image').className = tab === 'image' ? 'pb-3 tab-active' : 'pb-3 tab-inactive';
-            document.getElementById('tab-video').className = tab === 'video' ? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+        // พรีวิวรูปที่อัปโหลด
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            uploadedFiles = Array.from(e.target.files).slice(0, 5); // จำกัด 5 รูป
             
-            if(tab === 'image') {
-                renderCards(imageData, 'image');
-            } else {
-                renderCards(videoData, 'video');
+            if(uploadedFiles.length > 5) {
+                alert('อัปโหลดได้สูงสุด 5 รูป');
             }
-        }
 
-        // โหลดครั้งแรก
-        switchTab('image');
-    </script>
-</body>
-</html>
+            uploadedFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML += `<img src="${e.target
