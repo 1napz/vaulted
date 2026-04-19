@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0a0a0a; color: #e5e5e5; }
-       .card { background-color: #171717; border: 1px solid #262626; }
-       .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
-       .tab-inactive { color: #9ca3af; }
-       .progress-bar { transition: width 0.3s ease; }
+     .card { background-color: #171717; border: 1px solid #262626; }
+     .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
+     .tab-inactive { color: #9ca3af; }
+     .progress-bar { transition: width 0.3s ease; }
     </style>
 </head>
 <body class="font-sans">
@@ -39,10 +39,15 @@
 
                 <div id="preview" class="grid grid-cols-5 gap-2 mb-4"></div>
 
+                <!-- ปุ่มเปลี่ยนชื่อแล้ว -->
                 <button onclick="generateVideo()" id="genBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    สร้าง Prompt + โพสต์ TikTok
+                    Generate
                 </button>
 
+                <!-- ช่องแสดงสถานะใหม่ -->
+                <div id="statusBox" class="hidden mt-3 text-sm text-center p-2 rounded bg-gray-800 text-yellow-400"></div>
+
+                <!-- หลอดความคืบหน้า -->
                 <div id="progressWrapper" class="hidden mt-4">
                     <div class="flex justify-between mb-1">
                         <span class="text-sm text-gray-400">กำลังสร้าง...</span>
@@ -73,4 +78,139 @@
                         <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-blue-400" id="labelViews">0</div><div class="text-xs text-gray-500">ยอดวิว</div></div>
                         <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-green-400" id="labelSales">$0</div><div class="text-xs text-gray-500">ยอดขาย</div></div>
                         <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-yellow-400" id="labelCTR">0%</div><div class="text-xs text-gray-500">CTR</div></div>
-                        <div class="bg-black rounded p-3"><div class="text
+                        <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-purple-400" id="labelTime">0s</div><div class="text-xs text-gray-500">เวลา Gen</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageData = [
+            { product_name: 'Nike Air Max Test', image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c', prompt: 'photorealistic, studio lighting, 8k', ai_model: 'Meta AI', gen_time_sec: 15, views: 234, commission: 35.50 },
+            { product_name: 'Sony WH-1000XM5', image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e', prompt: 'minimalist product shot, white background', ai_model: 'Gemini', gen_time_sec: 8, views: 120, commission: 89.00 }
+        ];
+
+        let uploadedFiles = [];
+
+        function switchTab(tab) {
+            document.getElementById('tab-image').className = tab === 'image'? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            document.getElementById('tab-video').className = tab === 'video'? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            document.getElementById('content-image').className = tab === 'image'? '' : 'hidden';
+            document.getElementById('content-video').className = tab === 'video'? '' : 'hidden';
+            if(tab === 'image') renderImageTab();
+        }
+
+        function renderImageTab() {
+            const grid = document.getElementById('grid-image');
+            grid.innerHTML = '';
+            imageData.forEach(item => {
+                grid.innerHTML += `<div class="card rounded-lg overflow-hidden shadow-lg"><img src="${item.image_url}" alt="${item.product_name}" class="w-full h-48 object-cover"><div class="p-4"><div class="flex justify-between items-start mb-2"><h2 class="text-lg font-bold text-white">${item.product_name}</h2><span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">${item.ai_model}</span></div><p class="text-sm text-gray-400 mb-3 h-10">${item.prompt}</p><div class="flex justify-between text-xs text-gray-500 border-t border-gray-700 pt-3"><span>⏱️ ${item.gen_time_sec}s</span><span>👁️ ${item.views} views</span><span class="text-green-400 font-bold">$${item.commission}</span></div></div></div>`;
+            });
+        }
+
+        document.getElementById('imageUpload').onchange = function(e) {
+            const preview = document.getElementById('preview');
+            const fileCount = document.getElementById('fileCount');
+            preview.innerHTML = '';
+            uploadedFiles = Array.from(e.target.files || []).slice(0, 5);
+
+            if (uploadedFiles.length === 0) {
+                fileCount.innerText = 'ยังไม่ได้เลือกรูป';
+                updateStatus('', true);
+                return;
+            }
+
+            fileCount.innerText = `เลือกแล้ว ${uploadedFiles.length} รูป พร้อม Generate`;
+            updateStatus(`เลือกรูปเสร็จแล้ว ${uploadedFiles.length} รูป`, false);
+            if (uploadedFiles.length > 5) alert('อัปโหลดได้สูงสุด 5 รูป ระบบจะใช้แค่ 5 รูปแรก');
+
+            uploadedFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML += `<img src="${e.target.result}" class="w-full h-20 object-cover rounded">`;
+                }
+                reader.readAsDataURL(file);
+            });
+        };
+
+        // ฟังก์ชันใหม่: อัปเดทกล่องสถานะ
+        function updateStatus(msg, hide = false) {
+            const box = document.getElementById('statusBox');
+            if (hide || msg === '') {
+                box.classList.add('hidden');
+            } else {
+                box.innerText = msg;
+                box.classList.remove('hidden');
+            }
+        }
+
+        function generateVideo() {
+            if (uploadedFiles.length === 0) {
+                updateStatus('กรุณาอัปโหลดรูปอย่างน้อย 1 รูปก่อน', false);
+                return;
+            }
+
+            document.getElementById('genBtn').disabled = true;
+            document.getElementById('progressWrapper').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+            updateStatus('เริ่มสร้าง Prompt...', false);
+
+            let progress = 0;
+            const steps = [
+                'กำลังวิเคราะห์รูปที่ 1...',
+                'กำลังสร้าง Prompt สำหรับ Meta AI...',
+                'กำลังเขียนแคปชั่น TikTok...',
+                'กำลังคำนวณ Hashtag...',
+                'เสร็จสิ้น!'
+            ];
+
+            const interval = setInterval(() => {
+                progress += 25;
+                document.getElementById('progressBar').style.width = progress + '%';
+                document.getElementById('progressText').innerText = progress + '%';
+                updateStatus(steps[progress/25 - 1], false);
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    showResults();
+                    document.getElementById('genBtn').disabled = false;
+                    updateStatus('สร้างเสร็จแล้ว คัดลอกไปใช้ได้เลย', false);
+                    setTimeout(() => updateStatus('', true), 3000);
+                }
+            }, 400);
+        }
+
+        function showResults() {
+            const productName = uploadedFiles[0].name.split('.')[0].replace(/[^a-zA-Z0-9ก-๙]/g, '') || 'สินค้าใหม่';
+            const promptText = `Create a 5-second cinematic product video from the uploaded images. Camera slowly zooms in, ${productName} rotates 360 degrees. Studio lighting, 4k, smooth motion, shallow depth of field. End with product name text overlay.`;
+            document.getElementById('promptOutput').innerText = promptText;
+
+            const tiktokText = `วิดีโอใหม่มาแล้ว! ${productName} มุมไหนก็ปัง 📸✨\nใครโดนตกแล้ว เม้นเลย\n.\n#${productName} #TikTokMadeMeBuyIt #ป้ายยา #รีวิวของดี #MetaAI`;
+            document.getElementById('tiktokOutput').innerText = tiktokText;
+
+            document.getElementById('labelViews').innerText = Math.floor(Math.random() * 1000 + 100);
+            document.getElementById('labelSales').innerText = '$' + (Math.random() * 200 + 10).toFixed(2);
+            document.getElementById('labelCTR').innerText = (Math.random() * 5 + 1).toFixed(2) + '%';
+            document.getElementById('labelTime').innerText = Math.floor(Math.random() * 60 + 15) + 's';
+
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('progressWrapper').classList.add('hidden');
+        }
+
+        function copyPrompt() {
+            navigator.clipboard.writeText(document.getElementById('promptOutput').innerText);
+            updateStatus('คัดลอก Prompt แล้ว!', false);
+            setTimeout(() => updateStatus('', true), 2000);
+        }
+        function copyTiktok() {
+            navigator.clipboard.writeText(document.getElementById('tiktokOutput').innerText);
+            updateStatus('คัดลอกแคปชั่นแล้ว!', false);
+            setTimeout(() => updateStatus('', true), 2000);
+        }
+
+        switchTab('video');
+        renderImageTab();
+    </script>
+</body>
+</html>
