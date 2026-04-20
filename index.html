@@ -256,23 +256,26 @@
             }, 500);
         };
 
-        function analyzeProduct() {
-            const fileName = uploadedFiles[0].name.toLowerCase();
-            let category = 'general';
-            let name = uploadedFiles[0].name.split('.')[0].replace(/[-_]/g, ' ');
-            if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas')) category = 'shoes';
-            else if (fileName.includes('headphone') || fileName.includes('sony')) category = 'headphones';
-            else if (fileName.includes('watch')) category = 'watch';
-            else if (fileName.includes('camera')) category = 'camera';
-            else if (fileName.includes('cream') || fileName.includes('serum')) category = 'beauty';
-            else if (fileName.includes('shirt') || fileName.includes('dress')) category = 'fashion';
-            detectedProduct = { name, category };
-            document.getElementById('detectedName').innerText = name;
-            document.getElementById('detectedCategory').innerText = categoryNames[category];
-            document.getElementById('usedImageCount').innerText = `${uploadedFiles.length} รูป`;
-            document.getElementById('manualName').value = name;
-            document.getElementById('manualCategory').value = category;
-        }
+function analyzeProduct() {
+    const fileName = uploadedFiles[0].name.toLowerCase();
+    let category = 'general';
+    let name = 'สินค้า'; // << Hardcode ไปเลย จบ
+
+    // เดาแค่หมวดหมู่พอ ชื่อไม่ต้องเดาแล้ว
+    if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas')) category = 'shoes';
+    else if (fileName.includes('headphone') || fileName.includes('sony')) category = 'headphones';
+    else if (fileName.includes('watch')) category = 'watch';
+    else if (fileName.includes('camera')) category = 'camera';
+    else if (fileName.includes('cream') || fileName.includes('serum')) category = 'beauty';
+    else if (fileName.includes('shirt') || fileName.includes('dress')) category = 'fashion';
+
+    detectedProduct = { name, category };
+    document.getElementById('detectedName').innerText = name;
+    document.getElementById('detectedCategory').innerText = categoryNames[category];
+    document.getElementById('usedImageCount').innerText = `${uploadedFiles.length} รูป`;
+    document.getElementById('manualName').value = name;
+    document.getElementById('manualCategory').value = category;
+}
 
         function toggleManualEdit() {
             const form = document.getElementById('manualEditForm');
