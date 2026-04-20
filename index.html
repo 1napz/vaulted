@@ -7,22 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0a0a0a; color: #e5e5e5; }
- .card { background-color: #171717; border: 1px solid #262626; }
- .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
- .tab-inactive { color: #9ca3af; }
- .progress-bar { transition: width 0.3s ease; }
+       .card { background-color: #171717; border: 1px solid #262626; }
+       .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
+       .tab-inactive { color: #9ca3af; }
+       .progress-bar { transition: width 0.3s ease; }
+       .tool-btn { transition: all 0.2s; }
+       .tool-btn:hover { transform: translateY(-2px); }
     </style>
 </head>
 <body class="font-sans">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="mb-6">
             <h1 class="text-3xl font-bold text-white">Vaulted</h1>
-            <p class="text-gray-400">AI Generation Vault</p>
+            <p class="text-gray-400">AI Generation Vault - No Watermark Video Tools</p>
         </header>
 
-        <div class="flex gap-6 border-b border-gray-800 mb-6">
-            <button onclick="switchTab('image')" id="tab-image" class="pb-3 tab-inactive">Image Generation</button>
-            <button onclick="switchTab('video')" id="tab-video" class="pb-3 tab-active">Image to Video</button>
+        <div class="flex gap-6 border-b border-gray-800 mb-6 overflow-x-auto">
+            <button onclick="switchTab('image')" id="tab-image" class="pb-3 tab-inactive whitespace-nowrap">Image Generation</button>
+            <button onclick="switchTab('video')" id="tab-video" class="pb-3 tab-active whitespace-nowrap">Image to Video</button>
+            <button onclick="switchTab('tools')" id="tab-tools" class="pb-3 tab-inactive whitespace-nowrap">🚀 AI Video Tools</button>
         </div>
 
         <div id="content-image" class="hidden">
@@ -31,13 +34,11 @@
 
         <div id="content-video" class="">
             <div class="card rounded-lg p-6 mb-6">
-                <h2 class="text-xl font-bold text-white mb-4">สร้างวิดีโอจากรูปด้วย Meta AI</h2>
+                <h2 class="text-xl font-bold text-white mb-4">ขั้นตอนที่ 1: วิเคราะห์สินค้า + สร้าง Prompt</h2>
 
-                <label class="block mb-2 text-sm font-medium text-gray-300">1. อัปโหลดรูปสินค้า <span class="text-yellow-400">แนะนำ 1-5 รูป</span></label>
+                <label class="block mb-2 text-sm font-medium text-gray-300">1. อัปโหลดรูปสินค้า <span class="text-yellow-400">ใช้ได้ทุกรูปที่เลือก</span></label>
                 <input type="file" id="imageUpload" accept="image/*" multiple class="block w-full text-sm text-gray-400 mb-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700">
-                <!-- แก้ตรงนี้: แสดงจำนวนจริง + เตือนถ้าเกิน 5 -->
                 <p id="fileCount" class="text-xs text-gray-500 mb-1">ยังไม่ได้เลือกรูป</p>
-                <p id="fileWarning" class="text-xs text-yellow-500 mb-4 hidden">⚠️ Meta AI ใช้ได้ดีสุด 1-5 รูป ถ้าเกินจะใช้แค่ 5 รูปแรก</p>
                 <div id="preview" class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4"></div>
 
                 <div id="analysisCard" class="hidden bg-blue-950 border border-blue-800 rounded-lg p-4 mb-4">
@@ -48,13 +49,12 @@
                     <div id="analysisResult" class="text-sm text-white mb-3">
                         <div>สินค้า: <span id="detectedName" class="font-bold">-</span></div>
                         <div>หมวดหมู่: <span id="detectedCategory" class="font-bold">-</span></div>
-                        <div>จำนวนรูปที่ใช้: <span id="usedImageCount" class="font-bold text-green-400">-</span></div>
+                        <div>จำนวนรูป: <span id="usedImageCount" class="font-bold text-green-400">-</span></div>
                     </div>
 
                     <div id="manualEditForm" class="hidden border-t border-blue-800 pt-3 mt-3">
                         <label class="block text-xs text-gray-400 mb-1">ชื่อสินค้า</label>
-                        <input type="text" id="manualName" class="w-full bg-gray-900 text-white text-sm rounded px-2 py-1 mb-2 border border-gray-700" placeholder="เช่น Nike Air Jordan 1">
-
+                        <input type="text" id="manualName" class="w-full bg-gray-900 text-white text-sm rounded px-2 py-1 mb-2 border border-gray-700">
                         <label class="block text-xs text-gray-400 mb-1">หมวดหมู่</label>
                         <select id="manualCategory" class="w-full bg-gray-900 text-white text-sm rounded px-2 py-1 border border-gray-700">
                             <option value="shoes">รองเท้า</option>
@@ -69,8 +69,8 @@
                     </div>
                 </div>
 
-                <button onclick="generateVideo()" id="genBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600 disabled:cursor-not-allowed">
-                    Generate
+                <button onclick="generateVideo()" id="genBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600">
+                    Generate Prompt + แคปชั่น
                 </button>
 
                 <div id="statusBox" class="hidden mt-3 text-sm text-center p-2 rounded bg-gray-800 text-yellow-400"></div>
@@ -90,49 +90,102 @@
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="card rounded-lg p-6">
                         <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-lg font-bold text-white">Prompt สำหรับ Meta AI</h3>
+                            <h3 class="text-lg font-bold text-white">Prompt สำหรับ AI Video</h3>
                             <button onclick="copyPrompt()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Copy</button>
                         </div>
                         <div class="bg-black rounded p-3 text-sm text-green-400 font-mono whitespace-pre-wrap" id="promptOutput"></div>
+                        <button onclick="switchTab('tools')" class="w-full mt-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2 px-4 rounded">
+                            🚀 ส่งไปสร้างวิดีโอด้วย AI Tools
+                        </button>
                     </div>
                     <div class="card rounded-lg p-6">
                         <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-lg font-bold text-white">แคปชั่น TikTok + 5 Hashtags</h3>
+                            <h3 class="text-lg font-bold text-white">แคปชั่น TikTok + #ฟีดดดด</h3>
                             <button onclick="copyTiktok()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Copy</button>
                         </div>
                         <div class="bg-black rounded p-3 text-sm text-white whitespace-pre-wrap" id="tiktokOutput"></div>
                     </div>
                 </div>
-                <div class="card rounded-lg p-6 mt-6">
-                    <h3 class="text-lg font-bold text-white mb-4">Label ประสิทธิภาพ - Mock Data</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-blue-400" id="labelViews">0</div><div class="text-xs text-gray-500">ยอดวิว</div></div>
-                        <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-green-400" id="labelSales">$0</div><div class="text-xs text-gray-500">ยอดขาย</div></div>
-                        <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-yellow-400" id="labelCTR">0%</div><div class="text-xs text-gray-500">CTR</div></div>
-                        <div class="bg-black rounded p-3"><div class="text-2xl font-bold text-purple-400" id="labelTime">0s</div><div class="text-xs text-gray-500">เวลา Gen</div></div>
+            </div>
+        </div>
+
+        <div id="content-tools" class="hidden">
+            <div class="card rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-2">ขั้นตอนที่ 2: เลือก AI สร้างวิดีโอ - ฟรี ไม่มีลายน้ำ</h2>
+                <p class="text-sm text-gray-400 mb-4">Prompt และรูปจากขั้นตอนที่ 1 ถูกก็อปให้แล้ว กดเลือกเว็บแล้ววางได้เลย</p>
+
+                <div id="noDataWarn" class="hidden bg-yellow-900 border-yellow-700 text-yellow-200 px-4 py-3 rounded mb-4">
+                    ⚠️ ยังไม่มีข้อมูล กรุณากลับไป Tab "Image to Video" อัปรูปและกด Generate ก่อน
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="openTool('pika')" class="tool-btn card p-4 text-left hover:border-purple-500 border border-gray-700">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-xl font-bold">P</div>
+                            <div>
+                                <div class="font-bold text-white">Pika 1.5</div>
+                                <div class="text-xs text-green-400">ฟรี 80 คลิป/เดือน • คุณภาพสูงสุด</div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400">เหมาะกับ: คลิปสินค้าหลัก 5 วิ คุมกล้องได้ ไม่มีลายน้ำ</p>
+                    </button>
+
+                    <button onclick="openTool('pixverse')" class="tool-btn card p-4 text-left hover:border-pink-500 border border-gray-700">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-pink-600 rounded-lg flex items-center justify-center text-xl font-bold">X</div>
+                            <div>
+                                <div class="font-bold text-white">PixVerse</div>
+                                <div class="text-xs text-green-400">ฟรี 100 คลิป/เดือน • สไตล์ TikTok</div>
+                            </div>
+                        <p class="text-xs text-gray-400">เหมาะกับ: Effect ฮิตๆ ฟิลเตอร์ TikTok ไวๆ</p>
+                    </button>
+
+                    <button onclick="openTool('haiper')" class="tool-btn card p-4 text-left hover:border-blue-500 border border-gray-700">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-xl font-bold">H</div>
+                            <div>
+                                <div class="font-bold text-white">Haiper AI</div>
+                                <div class="text-xs text-green-400">ฟรีไม่จำกัด • เร็ว 4 วิ/คลิป</div>
+                            </div>
+                        <p class="text-xs text-gray-400">เหมาะกับ: ทำหลายๆ คลิปเทส A/B Testing</p>
+                    </button>
+
+                    <button onclick="openTool('luma')" class="tool-btn card p-4 text-left hover:border-cyan-500 border border-gray-700">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center text-xl font-bold">L</div>
+                            <div>
+                                <div class="font-bold text-white">Luma Dream Machine</div>
+                                <div class="text-xs text-green-400">ฟรี 30 คลิป/เดือน • สมจริงสุด</div>
+                            </div>
+                        <p class="text-xs text-gray-400">เหมาะกับ: สินค้า Luxury ต้องการความสมจริง</p>
+                    </button>
+                </div>
+
+                <div class="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                    <h3 class="font-bold text-white mb-2">📋 ข้อมูลที่จะเอาไปใช้:</h3>
+                    <div class="text-xs text-gray-300 space-y-1">
+                        <div><span class="text-gray-500">Prompt:</span> <span id="toolPrompt" class="text-green-400">-</span></div>
+                        <div><span class="text-gray-500">รูปภาพ:</span> <span id="toolImageCount" class="text-green-400">-</span> รูปแรกจะถูกดาวน์โหลดให้อัตโนมัติ</div>
                     </div>
+                    <button onclick="downloadFirstImage()" class="mt-3 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">ดาวน์โหลดรูปหลักมาใช้</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const imageData = [
-            { product_name: 'Nike Air Max Test', image_url: 'https://images.unsplash.com/photo-1542291026-7eec48a0a48c', prompt: 'photorealistic, studio lighting, 8k', ai_model: 'Meta AI', gen_time_sec: 15, views: 234, commission: 35.50 },
-            { product_name: 'Sony WH-1000XM5', image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e', prompt: 'minimalist product shot, white background', ai_model: 'Gemini', gen_time_sec: 8, views: 120, commission: 89.00 }
-        ];
-
         let uploadedFiles = [];
         let detectedProduct = { name: 'สินค้า', category: 'general' };
+        let generatedPrompt = '';
 
         const hashtagDB = {
-            shoes: ['#รองเท้า', '#sneakerhead', '#outfit', '#สตรีทแฟชั่น', '#ของมันต้องมี'],
-            headphones: ['#หูฟัง', '#gadget', '#เพลง', '#เกมมิ่ง', '#unbox'],
-            watch: ['#นาฬิกา', '#accessory', '#luxury', '#tech', '#outfit'],
-            camera: ['#กล้อง', '#ถ่ายรูป', '#vlog', '#contentcreator', '#photography'],
-            fashion: ['#แฟชั่น', '#outfit', '#แต่งตัว', '#ป้ายยา', '#ของดีบอกต่อ'],
-            beauty: ['#สกินแคร์', '#เครื่องสำอาง', '#รีวิวบิวตี้', '#howto', '#glowup'],
-            general: ['#TikTokMadeMeBuyIt', '#ป้ายยา', '#รีวิวของดี', '#ของมันต้องมี', '#ถูกและดี']
+            shoes: ['#รองเท้า', '#sneakerhead', '#outfit', '#สตรีทแฟชั่น', '#ของมันต้องมี', '#ฟีดดดด', '#tiktokthailand'],
+            headphones: ['#หูฟัง', '#gadget', '#เพลง', '#เกมมิ่ง', '#unbox', '#ฟีดดดด', '#tiktokthailand'],
+            watch: ['#นาฬิกา', '#accessory', '#luxury', '#tech', '#outfit', '#ฟีดดดด'],
+            camera: ['#กล้อง', '#ถ่ายรูป', '#vlog', '#contentcreator', '#photography', '#ฟีดดดด'],
+            fashion: ['#แฟชั่น', '#outfit', '#แต่งตัว', '#ป้ายยา', '#ของดีบอกต่อ', '#ฟีดดดด', '#tiktokthailand'],
+            beauty: ['#สกินแคร์', '#เครื่องสำอาง', '#รีวิวบิวตี้', '#howto', '#glowup', '#ฟีดดดด', '#tiktokthailand'],
+            general: ['#TikTokMadeMeBuyIt', '#ป้ายยา', '#รีวิวของดี', '#ของมันต้องมี', '#ถูกและดี', '#ฟีดดดด', '#tiktokthailand']
         };
 
         const categoryNames = {
@@ -141,50 +194,31 @@
         };
 
         function switchTab(tab) {
-            document.getElementById('tab-image').className = tab === 'image'? 'pb-3 tab-active' : 'pb-3 tab-inactive';
-            document.getElementById('tab-video').className = tab === 'video'? 'pb-3 tab-active' : 'pb-3 tab-inactive';
+            document.getElementById('tab-image').className = tab === 'image'? 'pb-3 tab-active whitespace-nowrap' : 'pb-3 tab-inactive whitespace-nowrap';
+            document.getElementById('tab-video').className = tab === 'video'? 'pb-3 tab-active whitespace-nowrap' : 'pb-3 tab-inactive whitespace-nowrap';
+            document.getElementById('tab-tools').className = tab === 'tools'? 'pb-3 tab-active whitespace-nowrap' : 'pb-3 tab-inactive whitespace-nowrap';
             document.getElementById('content-image').className = tab === 'image'? '' : 'hidden';
             document.getElementById('content-video').className = tab === 'video'? '' : 'hidden';
-            if(tab === 'image') renderImageTab();
+            document.getElementById('content-tools').className = tab === 'tools'? '' : 'hidden';
+
+            if (tab === 'tools') updateToolsTab();
         }
 
-        function renderImageTab() {
-            const grid = document.getElementById('grid-image');
-            grid.innerHTML = '';
-            imageData.forEach(item => {
-                grid.innerHTML += `<div class="card rounded-lg overflow-hidden shadow-lg"><img src="${item.image_url}" alt="${item.product_name}" class="w-full h-48 object-cover"><div class="p-4"><div class="flex justify-between items-start mb-2"><h2 class="text-lg font-bold text-white">${item.product_name}</h2><span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">${item.ai_model}</span></div><p class="text-sm text-gray-400 mb-3 h-10">${item.prompt}</p><div class="flex justify-between text-xs text-gray-500 border-t border-gray-700 pt-3"><span>⏱️ ${item.gen_time_sec}s</span><span>👁️ ${item.views} views</span><span class="text-green-400 font-bold">$${item.commission}</span></div></div></div>`;
-            });
-        }
-
-        // แก้ตรงนี้: นับจำนวนจริง ไม่ตัดที่ 5 แต่เตือนถ้าเกิน
         document.getElementById('imageUpload').onchange = function(e) {
             const preview = document.getElementById('preview');
             const fileCount = document.getElementById('fileCount');
-            const fileWarning = document.getElementById('fileWarning');
             preview.innerHTML = '';
-            uploadedFiles = Array.from(e.target.files || []); // เอามาทั้งหมด ไม่ slice
+            uploadedFiles = Array.from(e.target.files || []);
 
             if (uploadedFiles.length === 0) {
                 fileCount.innerText = 'ยังไม่ได้เลือกรูป';
-                fileWarning.classList.add('hidden');
                 document.getElementById('analysisCard').classList.add('hidden');
-                updateStatus('', true);
                 return;
             }
 
-            // แสดงจำนวนจริง
             fileCount.innerText = `เลือกแล้ว ${uploadedFiles.length} รูป`;
-
-            // เตือนถ้าเกิน 5 แต่ไม่บล็อค
-            if (uploadedFiles.length > 5) {
-                fileWarning.classList.remove('hidden');
-            } else {
-                fileWarning.classList.add('hidden');
-            }
-
             updateStatus(`กำลังวิเคราะห์รูป...`, false);
 
-            // พรีวิวทุกรูปที่เลือก
             uploadedFiles.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -196,7 +230,7 @@
             setTimeout(() => {
                 analyzeProduct();
                 document.getElementById('analysisCard').classList.remove('hidden');
-                updateStatus('วิเคราะห์เสร็จแล้ว พร้อม Generate', false);
+                updateStatus('วิเคราะห์เสร็จแล้ว', false);
                 setTimeout(() => updateStatus('', true), 2000);
             }, 500);
         };
@@ -206,26 +240,17 @@
             let category = 'general';
             let name = uploadedFiles[0].name.split('.')[0].replace(/[-_]/g, ' ');
 
-            if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas') || fileName.includes('รองเท้า')) {
-                category = 'shoes';
-            } else if (fileName.includes('headphone') || fileName.includes('sony') || fileName.includes('หูฟัง')) {
-                category = 'headphones';
-            } else if (fileName.includes('watch') || fileName.includes('นาฬิกา')) {
-                category = 'watch';
-            } else if (fileName.includes('camera') || fileName.includes('กล้อง')) {
-                category = 'camera';
-            } else if (fileName.includes('cream') || fileName.includes('serum') || fileName.includes('ครีม')) {
-                category = 'beauty';
-            } else if (fileName.includes('shirt') || fileName.includes('dress') || fileName.includes('เสื้อ')) {
-                category = 'fashion';
-            }
+            if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas')) category = 'shoes';
+            else if (fileName.includes('headphone') || fileName.includes('sony')) category = 'headphones';
+            else if (fileName.includes('watch')) category = 'watch';
+            else if (fileName.includes('camera')) category = 'camera';
+            else if (fileName.includes('cream') || fileName.includes('serum')) category = 'beauty';
+            else if (fileName.includes('shirt') || fileName.includes('dress')) category = 'fashion';
 
             detectedProduct = { name, category };
             document.getElementById('detectedName').innerText = name;
             document.getElementById('detectedCategory').innerText = categoryNames[category];
-            // แสดงจำนวนรูปที่จะใช้จริง: สูงสุด 5 รูปแรก
-            const usedCount = Math.min(uploadedFiles.length, 5);
-            document.getElementById('usedImageCount').innerText = `${usedCount} รูป ${uploadedFiles.length > 5? '(จาก ' + uploadedFiles.length + ' รูป)' : ''}`;
+            document.getElementById('usedImageCount').innerText = `${uploadedFiles.length} รูป`;
             document.getElementById('manualName').value = name;
             document.getElementById('manualCategory').value = category;
         }
@@ -242,70 +267,45 @@
             document.getElementById('detectedName').innerText = detectedProduct.name;
             document.getElementById('detectedCategory').innerText = categoryNames[detectedProduct.category];
             toggleManualEdit();
-            updateStatus('บันทึกรายละเอียดแล้ว', false);
+            updateStatus('บันทึกแล้ว', false);
             setTimeout(() => updateStatus('', true), 2000);
         }
 
         function updateStatus(msg, hide = false) {
             const box = document.getElementById('statusBox');
-            if (hide || msg === '') {
-                box.classList.add('hidden');
-            } else {
-                box.innerText = msg;
-                box.classList.remove('hidden');
-            }
+            if (hide || msg === '') box.classList.add('hidden');
+            else { box.innerText = msg; box.classList.remove('hidden'); }
         }
 
         function generateVideo() {
-            if (uploadedFiles.length === 0) {
-                updateStatus('กรุณาอัปโหลดรูปอย่างน้อย 1 รูปก่อน', false);
-                return;
-            }
+            if (uploadedFiles.length === 0) return updateStatus('กรุณาอัปโหลดรูปก่อน', false);
 
             document.getElementById('genBtn').disabled = true;
             document.getElementById('progressWrapper').classList.remove('hidden');
             document.getElementById('result').classList.add('hidden');
 
             let progress = 0;
-            const steps = [
-                '1/4 กำลังใช้ข้อมูลที่วิเคราะห์ได้...',
-                '2/4 กำลังสร้าง Prompt เฉพาะสินค้า...',
-                '3/4 กำลังเขียนแคปชั่น + เลือก 5 Hashtags...',
-                '4/4 เสร็จสิ้น!'
-            ];
-
             const interval = setInterval(() => {
                 progress += 25;
                 document.getElementById('progressBar').style.width = progress + '%';
                 document.getElementById('progressText').innerText = progress + '%';
-                updateStatus(steps[progress/25 - 1], false);
-
                 if (progress >= 100) {
                     clearInterval(interval);
                     showResults();
                     document.getElementById('genBtn').disabled = false;
-                    updateStatus('สร้างเสร็จแล้ว คัดลอกไปใช้ได้เลย', false);
-                    setTimeout(() => updateStatus('', true), 3000);
+                    updateStatus('สร้างเสร็จแล้ว! ไป Tab "AI Video Tools" ต่อได้เลย', false);
                 }
-            }, 500);
+            }, 400);
         }
 
         function showResults() {
             const { name, category } = detectedProduct;
             const keywords = hashtagDB[category];
-            const usedCount = Math.min(uploadedFiles.length, 5);
+            generatedPrompt = `Create a 5-second cinematic product video using ${uploadedFiles.length} images. Subject: ${name}, Category: ${categoryNames[category]}. Camera slowly orbits 360 degrees, zoom in on detail. Studio lighting, 4k, premium, TikTok style.`;
+            document.getElementById('promptOutput').innerText = generatedPrompt;
 
-            const promptText = `Create a 5-second cinematic product video using ${usedCount} images. Subject: ${name}, Category: ${categoryNames[category]}. Camera slowly orbits 360 degrees around product, then zoom in on key detail. Studio lighting, 4k, smooth motion, premium commercial style.`;
-            document.getElementById('promptOutput').innerText = promptText;
-
-            const tiktokText = `เจอของดี ${categoryNames[category]}! ${name} ตัวนี้คือที่สุด 📸✨\nใครโดนป้ายยาแล้ว เม้น "โดน" มาหน่อย\n.\n#${name.replace(/\s/g,'')} ${keywords.join(' ')}`;
+            const tiktokText = `เจอแล้ว! ${name} ที่ตามหา 📸✨\n\nใครโดนป้ายยา เม้น "ราคา" มาเลย เดี๋ยวส่งพิกัดให้\n.\n#${name.replace(/\s/g,'')} ${keywords.join(' ')}`;
             document.getElementById('tiktokOutput').innerText = tiktokText;
-
-            document.getElementById('labelViews').innerText = Math.floor(Math.random() * 1000 + 100);
-            document.getElementById('labelSales').innerText = '$' + (Math.random() * 200 + 10).toFixed(2);
-            document.getElementById('labelCTR').innerText = (Math.random() * 5 + 1).toFixed(2) + '%';
-            document.getElementById('labelTime').innerText = Math.floor(Math.random() * 60 + 15) + 's';
-
             document.getElementById('result').classList.remove('hidden');
             document.getElementById('progressWrapper').classList.add('hidden');
         }
@@ -321,8 +321,49 @@
             setTimeout(() => updateStatus('', true), 2000);
         }
 
+        function updateToolsTab() {
+            if (uploadedFiles.length === 0 ||!generatedPrompt) {
+                document.getElementById('noDataWarn').classList.remove('hidden');
+                document.getElementById('toolPrompt').innerText = '-';
+                document.getElementById('toolImageCount').innerText = '-';
+            } else {
+                document.getElementById('noDataWarn').classList.add('hidden');
+                document.getElementById('toolPrompt').innerText = generatedPrompt;
+                document.getElementById('toolImageCount').innerText = uploadedFiles.length;
+            }
+        }
+
+        function downloadFirstImage() {
+            if (uploadedFiles.length === 0) return alert('ยังไม่มีรูป');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(uploadedFiles[0]);
+            a.download = `vaulted-${detectedProduct.name}.jpg`;
+            a.click();
+        }
+
+        function openTool(tool) {
+            if (uploadedFiles.length === 0 ||!generatedPrompt) {
+                alert('กรุณากลับไป Tab "Image to Video" อัปรูปและกด Generate ก่อน');
+                switchTab('video');
+                return;
+            }
+
+            // Copy prompt to clipboard automatically
+            navigator.clipboard.writeText(generatedPrompt);
+            downloadFirstImage();
+
+            const urls = {
+                pika: 'https://pika.art',
+                pixverse: 'https://pixverse.ai',
+                haiper: 'https://haiper.ai',
+                luma: 'https://lumalabs.ai/dream-machine'
+            };
+
+            alert(`✅ ก็อป Prompt แล้ว + ดาวน์โหลดรูปแล้ว\n\nไปที่ ${tool} แล้ววาง Prompt + อัปรูปได้เลย`);
+            window.open(urls[tool], '_blank');
+        }
+
         switchTab('video');
-        renderImageTab();
     </script>
 </body>
 </html>
