@@ -7,12 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0a0a0a; color: #e5e5e5; }
-       .card { background-color: #171717; border: 1px solid #262626; }
-       .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
-       .tab-inactive { color: #9ca3af; }
-       .progress-bar { transition: width 0.3s ease; }
-       .tool-btn { transition: all 0.2s; }
-       .tool-btn:hover { transform: translateY(-2px); }
+      .card { background-color: #171717; border: 1px solid #262626; }
+      .tab-active { border-bottom: 2px solid #3b82f6; color: #fff; }
+      .tab-inactive { color: #9ca3af; }
+      .progress-bar { transition: width 0.3s ease; }
+      .tool-btn { transition: all 0.2s; }
+      .tool-btn:hover { transform: translateY(-2px); }
+      .prompt-card { cursor: pointer; transition: all 0.2s; }
+      .prompt-card:hover { border-color: #3b82f6; }
+      .prompt-selected { border-color: #3b82f6; background-color: #1e3a8a20; }
     </style>
 </head>
 <body class="font-sans">
@@ -36,7 +39,7 @@
             <div class="card rounded-lg p-6 mb-6">
                 <h2 class="text-xl font-bold text-white mb-4">ขั้นตอนที่ 1: วิเคราะห์สินค้า + สร้าง Prompt</h2>
 
-                <label class="block mb-2 text-sm font-medium text-gray-300">1. อัปโหลดรูปสินค้า <span class="text-yellow-400">ใช้ได้ทุกรูปที่เลือก</span></label>
+                <label class="block mb-2 text-sm font-medium text-gray-300">1. อัปโหลดรูปสินค้า <span class="text-yellow-400">ยิ่งหลายรูป AI ยิ่งเก่ง</span></label>
                 <input type="file" id="imageUpload" accept="image/*" multiple class="block w-full text-sm text-gray-400 mb-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700">
                 <p id="fileCount" class="text-xs text-gray-500 mb-1">ยังไม่ได้เลือกรูป</p>
                 <div id="preview" class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4"></div>
@@ -69,15 +72,21 @@
                     </div>
                 </div>
 
-                <button onclick="generateVideo()" id="genBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600">
-                    Generate Prompt + แคปชั่น
-                </button>
+                <label class="block mb-2 text-sm font-medium text-gray-300">2. เลือกโหมด Generate</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button onclick="generateVideo('auto')" id="genAutoBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600">
+                        ⚡ Auto Gen <span class="text-xs font-normal block">เร็ว 1 วิ | 1 Prompt</span>
+                    </button>
+                    <button onclick="generateVideo('high')" id="genHighBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-4 rounded disabled:bg-gray-600">
+                        💎 High Performance <span class="text-xs font-normal block">ละเอียด 3 วิ | 3 Prompt ให้เลือก</span>
+                    </button>
+                </div>
 
                 <div id="statusBox" class="hidden mt-3 text-sm text-center p-2 rounded bg-gray-800 text-yellow-400"></div>
 
                 <div id="progressWrapper" class="hidden mt-4">
                     <div class="flex justify-between mb-1">
-                        <span class="text-sm text-gray-400">กำลังสร้าง...</span>
+                        <span id="progressLabel" class="text-sm text-gray-400">กำลังสร้าง...</span>
                         <span id="progressText" class="text-sm text-gray-400">0%</span>
                     </div>
                     <div class="w-full bg-gray-700 rounded-full h-2.5">
@@ -93,7 +102,9 @@
                             <h3 class="text-lg font-bold text-white">Prompt สำหรับ AI Video</h3>
                             <button onclick="copyPrompt()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">Copy</button>
                         </div>
-                        <div class="bg-black rounded p-3 text-sm text-green-400 font-mono whitespace-pre-wrap" id="promptOutput"></div>
+                        <div id="promptContainer">
+                            <div class="bg-black rounded p-3 text-sm text-green-400 font-mono whitespace-pre-wrap" id="promptOutput"></div>
+                        </div>
                         <button onclick="switchTab('tools')" class="w-full mt-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2 px-4 rounded">
                             🚀 ส่งไปสร้างวิดีโอด้วย AI Tools
                         </button>
@@ -126,7 +137,6 @@
                                 <div class="font-bold text-white">Pika 1.5</div>
                                 <div class="text-xs text-green-400">ฟรี 80 คลิป/เดือน • คุณภาพสูงสุด</div>
                             </div>
-                        </div>
                         <p class="text-xs text-gray-400">เหมาะกับ: คลิปสินค้าหลัก 5 วิ คุมกล้องได้ ไม่มีลายน้ำ</p>
                     </button>
 
@@ -176,7 +186,8 @@
     <script>
         let uploadedFiles = [];
         let detectedProduct = { name: 'สินค้า', category: 'general' };
-        let generatedPrompt = '';
+        let generatedPrompts = [];
+        let selectedPromptIndex = 0;
 
         const hashtagDB = {
             shoes: ['#รองเท้า', '#sneakerhead', '#outfit', '#สตรีทแฟชั่น', '#ของมันต้องมี', '#ฟีดดดด', '#tiktokthailand'],
@@ -193,6 +204,21 @@
             camera: 'กล้อง/อุปกรณ์', fashion: 'แฟชั่น/เสื้อผ้า', beauty: 'บิวตี้/สกินแคร์', general: 'ทั่วไป'
         };
 
+        const promptTemplates = [
+            `Create a 5-second cinematic product video using ${uploadedFiles.length} images. Subject: {name}. Camera slowly orbits 360 degrees around product, smooth zoom in on key detail. Premium studio lighting, 4K, shallow depth of field, TikTok viral style.`,
+            `Dynamic 5-second ad for {name}. Start with close-up macro shot of texture, then quick zoom out revealing full product. Add subtle particle effects, dramatic lighting, luxury commercial style.`,
+            `Trendy TikTok unboxing style video, 5 seconds. Hand places {name} on clean surface, camera does quick whip pan to product, then slow motion spin. Bright natural lighting, Gen-Z aesthetic.`,
+            `ASMR product showcase for {name}. 5-second video, ultra close-up, soft lighting, satisfying slow movement. Focus on material texture and premium feel. No text overlay.`,
+            `Before-After transformation hook, 5 seconds. Start with blurry dark shot, then sudden reveal of {name} in perfect lighting with sparkle effect. High energy, TikTok trend style.`,
+            `Floating product shot, 5 seconds. {name} suspended in mid-air on clean gradient background. Camera circles slowly, soft shadows, minimal luxury brand commercial look.`,
+            `User-generated content style for {name}. 5-second POV shot: hand picks up product, shows to camera, quick cut to product detail. Casual natural lighting, authentic feel.`,
+            `Tech showcase video, 5 seconds. {name} on reflective black surface, neon rim light, camera slides from left to right. Cyberpunk/futuristic style, 4K.`,
+            `Satisfying loop video, 5 seconds. {name} rotates continuously on turntable, seamless loop. Clean white background, soft shadow, e-commerce premium style.`,
+            `Dramatic reveal video, 5 seconds. Start with silhouette of {name}, then lights turn on revealing product with epic zoom. Cinematic, bold, high contrast.`
+        ];
+
+        const highPerfNegative = "text, watermark, logo, blurry, low quality, distorted, ugly, bad anatomy, extra limbs, deformed";
+
         function switchTab(tab) {
             document.getElementById('tab-image').className = tab === 'image'? 'pb-3 tab-active whitespace-nowrap' : 'pb-3 tab-inactive whitespace-nowrap';
             document.getElementById('tab-video').className = tab === 'video'? 'pb-3 tab-active whitespace-nowrap' : 'pb-3 tab-inactive whitespace-nowrap';
@@ -200,7 +226,6 @@
             document.getElementById('content-image').className = tab === 'image'? '' : 'hidden';
             document.getElementById('content-video').className = tab === 'video'? '' : 'hidden';
             document.getElementById('content-tools').className = tab === 'tools'? '' : 'hidden';
-
             if (tab === 'tools') updateToolsTab();
         }
 
@@ -209,16 +234,13 @@
             const fileCount = document.getElementById('fileCount');
             preview.innerHTML = '';
             uploadedFiles = Array.from(e.target.files || []);
-
             if (uploadedFiles.length === 0) {
                 fileCount.innerText = 'ยังไม่ได้เลือกรูป';
                 document.getElementById('analysisCard').classList.add('hidden');
                 return;
             }
-
             fileCount.innerText = `เลือกแล้ว ${uploadedFiles.length} รูป`;
             updateStatus(`กำลังวิเคราะห์รูป...`, false);
-
             uploadedFiles.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -226,7 +248,6 @@
                 }
                 reader.readAsDataURL(file);
             });
-
             setTimeout(() => {
                 analyzeProduct();
                 document.getElementById('analysisCard').classList.remove('hidden');
@@ -239,14 +260,12 @@
             const fileName = uploadedFiles[0].name.toLowerCase();
             let category = 'general';
             let name = uploadedFiles[0].name.split('.')[0].replace(/[-_]/g, ' ');
-
             if (fileName.includes('shoe') || fileName.includes('nike') || fileName.includes('adidas')) category = 'shoes';
             else if (fileName.includes('headphone') || fileName.includes('sony')) category = 'headphones';
             else if (fileName.includes('watch')) category = 'watch';
             else if (fileName.includes('camera')) category = 'camera';
             else if (fileName.includes('cream') || fileName.includes('serum')) category = 'beauty';
             else if (fileName.includes('shirt') || fileName.includes('dress')) category = 'fashion';
-
             detectedProduct = { name, category };
             document.getElementById('detectedName').innerText = name;
             document.getElementById('detectedCategory').innerText = categoryNames[category];
@@ -277,65 +296,108 @@
             else { box.innerText = msg; box.classList.remove('hidden'); }
         }
 
-        function generateVideo() {
+        function generateVideo(mode) {
             if (uploadedFiles.length === 0) return updateStatus('กรุณาอัปโหลดรูปก่อน', false);
-
-            document.getElementById('genBtn').disabled = true;
+            document.getElementById('genAutoBtn').disabled = true;
+            document.getElementById('genHighBtn').disabled = true;
             document.getElementById('progressWrapper').classList.remove('hidden');
             document.getElementById('result').classList.add('hidden');
 
+            if (mode === 'auto') {
+                runAutoGen();
+            } else {
+                runHighPerfGen();
+            }
+        }
+
+        function runAutoGen() {
+            document.getElementById('progressLabel').innerText = 'Auto Gen กำลังทำงาน...';
             let progress = 0;
             const interval = setInterval(() => {
-                progress += 25;
+                progress += 50;
                 document.getElementById('progressBar').style.width = progress + '%';
                 document.getElementById('progressText').innerText = progress + '%';
                 if (progress >= 100) {
                     clearInterval(interval);
-                    showResults();
-                    document.getElementById('genBtn').disabled = false;
-                    updateStatus('สร้างเสร็จแล้ว! ไป Tab "AI Video Tools" ต่อได้เลย', false);
+                    const { name } = detectedProduct;
+                    const template = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
+                    generatedPrompts = [template.replace('{name}', name)];
+                    selectedPromptIndex = 0;
+                    showResults(false);
+                    enableGenButtons();
                 }
-            }, 400);
+            }, 200); // 1 วินาที
         }
 
-        function showResults() {
-    const { name, category } = detectedProduct;
-    const keywords = hashtagDB[category];
+        function runHighPerfGen() {
+            document.getElementById('progressLabel').innerText = 'High Performance กำลังวิเคราะห์เชิงลึก...';
+            const steps = ['วิเคราะห์แสงและสี...', 'ระบุจุดเด่นสินค้า...', 'สร้าง Prompt 3 เวอร์ชัน...', 'เพิ่ม Negative Prompt...', 'เสร็จสิ้น!'];
+            let progress = 0;
+            let stepIndex = 0;
+            updateStatus(steps[0], false);
+            const interval = setInterval(() => {
+                progress += 20;
+                document.getElementById('progressBar').style.width = progress + '%';
+                document.getElementById('progressText').innerText = progress + '%';
+                if (stepIndex < steps.length - 1) {
+                    stepIndex++;
+                    updateStatus(steps[stepIndex], false);
+                }
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    const { name, category } = detectedProduct;
+                    // สุ่ม 3 อันไม่ซ้ำ
+                    const shuffled = [...promptTemplates].sort(() => 0.5 - Math.random());
+                    generatedPrompts = shuffled.slice(0, 3).map(t =>
+                        t.replace('{name}', name) + ` Negative prompt: ${highPerfNegative}`
+                    );
+                    selectedPromptIndex = 0;
+                    showResults(true);
+                    enableGenButtons();
+                }
+            }, 600); // 3 วินาที
+        }
 
-    // 10 Prompt Default สุ่มใช้
-    const promptTemplates = [
-        `Create a 5-second cinematic product video using ${uploadedFiles.length} images. Subject: ${name}. Camera slowly orbits 360 degrees around product, smooth zoom in on key detail. Premium studio lighting, 4K, shallow depth of field, TikTok viral style.`,
+        function enableGenButtons() {
+            document.getElementById('genAutoBtn').disabled = false;
+            document.getElementById('genHighBtn').disabled = false;
+        }
 
-        `Dynamic 5-second ad for ${name}. Start with close-up macro shot of texture, then quick zoom out revealing full product. Add subtle particle effects, dramatic lighting, luxury commercial style.`,
+        function showResults(isHighPerf) {
+            const { name, category } = detectedProduct;
+            const keywords = hashtagDB[category];
 
-        `Trendy TikTok unboxing style video, 5 seconds. Hand places ${name} on clean surface, camera does quick whip pan to product, then slow motion spin. Bright natural lighting, Gen-Z aesthetic.`,
+            const promptContainer = document.getElementById('promptContainer');
+            if (isHighPerf) {
+                // แสดง 3 อันให้เลือก
+                promptContainer.innerHTML = generatedPrompts.map((p, i) => `
+                    <div class="prompt-card card p-3 mb-2 border border-gray-700 rounded ${i === 0? 'prompt-selected' : ''}" onclick="selectPrompt(${i})">
+                        <div class="text-xs text-purple-400 mb-1">ตัวเลือกที่ ${i+1}</div>
+                        <div class="text-sm text-green-400 font-mono whitespace-pre-wrap">${p}</div>
+                    </div>
+                `).join('');
+            } else {
+                promptContainer.innerHTML = `<div class="bg-black rounded p-3 text-sm text-green-400 font-mono whitespace-pre-wrap" id="promptOutput">${generatedPrompts[0]}</div>`;
+            }
 
-        `ASMR product showcase for ${name}. 5-second video, ultra close-up, soft lighting, satisfying slow movement. Focus on material texture and premium feel. No text overlay.`,
+            const tiktokText = `เจอแล้ว! ${name} ที่ตามหา 📸✨\n\nใครโดนป้ายยา เม้น "ราคา" มาเลย เดี๋ยวส่งพิกัดให้\n.\n#${name.replace(/\s/g,'')} ${keywords.join(' ')}`;
+            document.getElementById('tiktokOutput').innerText = tiktokText;
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('progressWrapper').classList.add('hidden');
+            updateStatus('สร้างเสร็จแล้ว! ไป Tab "AI Video Tools" ต่อได้เลย', false);
+        }
 
-        `Before-After transformation hook, 5 seconds. Start with blurry dark shot, then sudden reveal of ${name} in perfect lighting with sparkle effect. High energy, TikTok trend style.`,
+        function selectPrompt(index) {
+            selectedPromptIndex = index;
+            document.querySelectorAll('.prompt-card').forEach((el, i) => {
+                if (i === index) el.classList.add('prompt-selected');
+                else el.classList.remove('prompt-selected');
+            });
+        }
 
-        `Floating product shot, 5 seconds. ${name} suspended in mid-air on clean gradient background. Camera circles slowly, soft shadows, minimal luxury brand commercial look.`,
-
-        `User-generated content style for ${name}. 5-second POV shot: hand picks up product, shows to camera, quick cut to product detail. Casual natural lighting, authentic feel.`,
-
-        `Tech showcase video, 5 seconds. ${name} on reflective black surface, neon rim light, camera slides from left to right. Cyberpunk/futuristic style, 4K.`,
-
-        `Satisfying loop video, 5 seconds. ${name} rotates continuously on turntable, seamless loop. Clean white background, soft shadow, e-commerce premium style.`,
-
-        `Dramatic reveal video, 5 seconds. Start with silhouette of ${name}, then lights turn on revealing product with epic zoom. Cinematic, bold, high contrast.`
-    ];
-
-    // สุ่มเลือก 1 อัน
-    generatedPrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
-    document.getElementById('promptOutput').innerText = generatedPrompt;
-
-    const tiktokText = `เจอแล้ว! ${name} ที่ตามหา 📸✨\n\nใครโดนป้ายยา เม้น "ราคา" มาเลย เดี๋ยวส่งพิกัดให้\n.\n#${name.replace(/\s/g,'')} ${keywords.join(' ')}`;
-    document.getElementById('tiktokOutput').innerText = tiktokText;
-    document.getElementById('result').classList.remove('hidden');
-    document.getElementById('progressWrapper').classList.add('hidden');
-}
         function copyPrompt() {
-            navigator.clipboard.writeText(document.getElementById('promptOutput').innerText);
+            const text = generatedPrompts[selectedPromptIndex];
+            navigator.clipboard.writeText(text);
             updateStatus('คัดลอก Prompt แล้ว!', false);
             setTimeout(() => updateStatus('', true), 2000);
         }
@@ -346,13 +408,13 @@
         }
 
         function updateToolsTab() {
-            if (uploadedFiles.length === 0 ||!generatedPrompt) {
+            if (uploadedFiles.length === 0 || generatedPrompts.length === 0) {
                 document.getElementById('noDataWarn').classList.remove('hidden');
                 document.getElementById('toolPrompt').innerText = '-';
                 document.getElementById('toolImageCount').innerText = '-';
             } else {
                 document.getElementById('noDataWarn').classList.add('hidden');
-                document.getElementById('toolPrompt').innerText = generatedPrompt;
+                document.getElementById('toolPrompt').innerText = generatedPrompts[selectedPromptIndex].substring(0, 100) + '...';
                 document.getElementById('toolImageCount').innerText = uploadedFiles.length;
             }
         }
@@ -366,23 +428,19 @@
         }
 
         function openTool(tool) {
-            if (uploadedFiles.length === 0 ||!generatedPrompt) {
+            if (uploadedFiles.length === 0 || generatedPrompts.length === 0) {
                 alert('กรุณากลับไป Tab "Image to Video" อัปรูปและกด Generate ก่อน');
                 switchTab('video');
                 return;
             }
-
-            // Copy prompt to clipboard automatically
-            navigator.clipboard.writeText(generatedPrompt);
+            navigator.clipboard.writeText(generatedPrompts[selectedPromptIndex]);
             downloadFirstImage();
-
             const urls = {
                 pika: 'https://pika.art',
                 pixverse: 'https://pixverse.ai',
                 haiper: 'https://haiper.ai',
                 luma: 'https://lumalabs.ai/dream-machine'
             };
-
             alert(`✅ ก็อป Prompt แล้ว + ดาวน์โหลดรูปแล้ว\n\nไปที่ ${tool} แล้ววาง Prompt + อัปรูปได้เลย`);
             window.open(urls[tool], '_blank');
         }
