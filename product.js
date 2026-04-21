@@ -43,3 +43,27 @@ const promptTemplates = {
 // กดปุ่ม Gen Prompt
 genPromptBtn?.addEventListener('click', () => {
   const
+// Elements เพิ่ม
+const categorySelect = document.getElementById('categorySelect');
+const brandInput = document.getElementById('brandInput');
+
+// ออโต้สร้างชื่อไฟล์ yyyymmdd-Category-Brand
+function updateFilename() {
+  const now = new Date();
+  const yyyymmdd = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0');
+
+  const category = categorySelect?.value || 'Product';
+  const brand = brandInput?.value.trim().replace(/\s+/g, '') || 'Brand';
+
+  filenameInput.value = `${yyyymmdd}-${category}-${brand}`;
+}
+
+// รันครั้งแรก + เวลาเปลี่ยน dropdown/input
+document.addEventListener('DOMContentLoaded', updateFilename);
+categorySelect?.addEventListener('change', updateFilename);
+brandInput?.addEventListener('input', updateFilename);
+
+// อัพเดตทุกนาที เผื่อข้ามวัน
+setInterval(updateFilename, 60000);
