@@ -47,13 +47,30 @@ function saveFilename(name) {
   }
 }
 
-// พรีวิวรูป
+// พรีวิวรูป - เวอร์ชั่นปลอดภัย ไม่มี Alert ไม่มี Leak
 fileInput?.addEventListener('change', (e) => {
   const file = e.target.files[0];
-  if (file && imagePreview) {
-    imagePreview.src = URL.createObjectURL(file);
-    imagePreview.classList.remove('hidden');
+  if (!file ||!imagePreview) return;
+
+  // เช็คว่าเป็นรูปจริงไหม
+  if (!file.type.startsWith('image/')) {
+    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+    fileInput.value = '';
+    return;
   }
+
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    imagePreview.src = event.target.result; // ได้ data:image/jpeg;base64,xxxxx
+    imagePreview.classList.remove('hidden');
+  };
+
+  reader.onerror = () => {
+    alert('อ่านไฟล์รูปไม่ได้');
+  };
+
+  reader.readAsDataURL(file); // แปลงไฟล์เป็น Base64
 });
 
 // Template Prompt ตาม Category
