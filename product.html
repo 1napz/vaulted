@@ -58,6 +58,27 @@
       <div id="status-box" class="status-box" style="display:none;">
         <p id="status-text">กำลังเช็ค...</p>
       </div>
+      <!-- แทนที่ปุ่มบันทึกเดิม -->
+<div class="space-y-3">
+  <label class="block text-sm font-medium text-gray-700">เลือก Engine</label>
+  <div class="grid grid-cols-2 gap-3">
+    <button
+      id="genFALBtn"
+      class="px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition"
+    >
+      🚀 FAL Kling
+      <div class="text-xs opacity-80">เร็ว 1 นาที, 5 วิ, 1.8 บาท</div>
+    </button>
+    <button
+      id="genHFBtn"
+      class="px-4 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg font-medium hover:opacity-90 transition"
+    >
+      🆓 Hugging Face
+      <div class="text-xs opacity-80">ฟรี, 3-10 นาที, 3 วิ</div>
+    </button>
+  </div>
+  <div id="statusText" class="text-sm text-gray-500 text-center hidden"></div>
+</div>
     </section>
   </div>
   <script src="generate-lite.js"></script>
