@@ -24,7 +24,11 @@
       <div class="input-group">
         <label>2. ตั้งชื่อไฟล์</label>
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input type="text" id="input-category" placeholder="Category" style="flex:1;">
+          <select id="input-category" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box;">
+              <option value="">-- เลือก Category --</option>
+                <option value="Menswear">เสื้อผ้าผู้ชาย</option>
+                  <option value="Womenswear">เสื้อผ้าผู้หญิง</option>
+                  </select>
           <input type="text" id="input-brand" placeholder="Brand" style="flex:1;">
         </div>
         <input type="text" id="input-filename" placeholder="YYYYMMDD-Category-Brand" style="width:100%;">
