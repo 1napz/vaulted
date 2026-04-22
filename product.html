@@ -386,10 +386,19 @@
       const url = URL.createObjectURL(file);
       const wrap = document.createElement('div');
       wrap.className = 'relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group';
-      wrap.innerHTML = `
-        <img src="${url}" class="w-full h-full object-cover">
-        <button data-idx="${i}" class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white text-[12px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">×</button>
-      `;
+
+      const img = document.createElement('img');
+      img.src = url;
+      img.className = 'w-full h-full object-cover';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.idx = String(i);
+      button.className = 'absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white text-[12px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition';
+      button.textContent = '×';
+
+      wrap.appendChild(img);
+      wrap.appendChild(button);
       previewGrid.appendChild(wrap);
     });
     previewGrid.querySelectorAll('button').forEach(btn => {
