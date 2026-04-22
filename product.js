@@ -65,14 +65,14 @@ fileInput?.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Templates
+// Templates (อัพเกรดใหม่ - เน้นวิดีโอ 5 วินาที)
 const promptTemplates = {
-  'Menswear': 'A male model confidently walking on a fashion runway, wearing this {item}, cinematic lighting, 4k, high fashion, smooth fabric movement',
-  'Womenswear': 'A female model strutting on a catwalk, wearing this {item}, elegant pose, studio lighting, 4k, vogue style, fabric flowing naturally',
-  'Accessories': 'Close-up product shot of this {item} on rotating platform, luxury studio lighting, 4k, slow motion, detailed texture',
-  'Shoes': 'Model walking in this {item}, focus on footwear, runway floor reflection, 4k, dynamic camera movement',
-  'Bags': 'Product showcase of this {item} on pedestal, luxury boutique lighting, 4k, 360 view, leather texture detail',
-  'default': 'A professional model showcasing this {item}, clean studio background, 4k, commercial photography style'
+  'Menswear': 'A confident male model walking powerfully on a luxury fashion runway, wearing this {item}, dynamic tracking shot, smooth fabric movement, dramatic cinematic lighting, sharp shadows, 4K, high-end commercial video',
+  'Womenswear': 'Elegant female model strutting on a high-end catwalk, wearing this {item}, flowing fabric in slow motion, cinematic side pan camera, soft dramatic lighting with highlights, 4K, vogue fashion film style',
+  'Accessories': 'Close-up luxury product shot of this {item} on a glossy rotating platform, sparkling details, slow smooth 360 orbit camera, premium studio lighting with beautiful reflections, 4K, high-end commercial',
+  'Shoes': 'Dynamic shot of model walking in this {item}, sharp focus on foot movement and sole detail, runway reflection, smooth tracking camera, cinematic lighting, 4K, luxury fashion video',
+  'Bags': 'Luxury handbag showcase, this {item} on a marble pedestal with elegant hand interaction, slow cinematic camera orbit, rich leather texture close-up, soft dramatic lighting, 4K, premium product commercial',
+  'default': 'Professional luxury product showcase of this {item}, clean modern studio, dynamic camera movement, smooth motion, premium cinematic lighting, 4K, high-end commercial video style'
 };
 
 let lastOriginalPrompt = '';
