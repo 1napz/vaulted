@@ -2,7 +2,7 @@
 
 **เครื่องเจียระไน Lite** — อัพรูปสินค้า → AI แต่ง Prompt → เจนวิดีโอ → สร้างแคปชั่นอัตโนมัติ
 
-Live: https://crystalcastle-pi.vercel.app/product.html
+Live: https://crystalcastle-pi.vercel.app/index.html
 
 ---
 
