@@ -39,7 +39,17 @@ export default async function handler(req, res) {
         model: 'llama-3.3-70b-versatile',
         messages: [{ 
           role: 'user', 
-          content: `เขียนแคปชั่น TikTok สั้น ๆ น่าสนใจ (1-2 ประโยค + hashtags 3-5 อัน) สำหรับวิดีโอแฟชั่นของแบรนด์ ${brand || 'สินค้า'} หมวด ${category || 'แฟชั่น'} โดยมี prompt ว่า: ${prompt}` 
+          content: `Write a short, engaging TikTok caption in Thai for a fashion product video. Include:
+- 1-2 sentences describing the product/style
+- 3-5 relevant hashtags (#CrystalCastle, #แฟชั่น, etc.)
+- Friendly, trendy tone (Gen Z style)
+- No emoji overload (max 3 emojis)
+
+Brand: ${brand}
+Category: ${category}
+Prompt: ${prompt}
+
+Caption (Thai):` 
         }],
         temperature: 0.7,
         max_tokens: 300
