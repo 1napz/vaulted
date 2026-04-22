@@ -6,7 +6,11 @@ export default async function handler(req, res) {
   try {
     // 1. ตาม redirect ก่อน (vt.tiktok.com → www.tiktok.com)
     let finalUrl = url;
-    if (url.includes('vt.tiktok.com') || url.includes('vm.tiktok.com')) {
+    const parsedUrl = new URL(url);
+    const isTikTokShortHost =
+      parsedUrl.hostname === 'vt.tiktok.com' ||
+      parsedUrl.hostname === 'vm.tiktok.com';
+    if (isTikTokShortHost) {
       const r = await fetch(url, { redirect: 'follow' });
       finalUrl = r.url;
     }
