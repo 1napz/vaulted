@@ -41,7 +41,11 @@ export default async function handler(req, res) {
         model: 'llama-3.3-70b-versatile',
         messages: [{ 
           role: 'user', 
-          content: `ช่วย Enhance prompt การทำวิดีโอแฟชั่นนี้ให้ดีขึ้น (เพิ่มแสง, การเคลื่อนกล้อง, อารมณ์) โดยคงความหมายเดิม: ${user_prompt}` 
+          content: `You are a professional fashion video director. Improve this English video prompt to be more cinematic, specific, and professional. Keep it concise (under 80 words), use technical terms (pan, orbit, close-up, slow motion, lighting). Return ONLY the improved prompt, no explanations.
+
+Original prompt: ${user_prompt}
+
+Improved prompt:` 
         }],
         temperature: 0.7,
         max_tokens: 500
