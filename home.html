@@ -2,9 +2,9 @@
 const endpoints = [
   { name: 'Gen Prompt', path: '/api/prompt', method: 'POST', testBody: { user_prompt: 'test', category: 'test' } },
   { name: 'Generate Post', path: '/api/post', method: 'POST', testBody: { prompt: 'test', brand: 'test', category: 'test' } },
-  { name: 'FAL Kling', path: '/api/falkling', method: 'POST', testBody: { image_url: 'https://example.com/test.jpg', prompt: 'test' } },
+  { name: 'FAL Kling', path: '/api/video', method: 'POST', testBody: { image_url: 'https://example.com/test.jpg', prompt: 'test' } },
   { name: 'Magic Hour', path: '/api/magichour', method: 'POST', testBody: { image_url: 'https://example.com/test.jpg', prompt: 'test' } },
-  { name: 'Upload', path: '/api/photo', method: 'POST' }
+  { name: 'Upload', path: '/api/upload', method: 'POST' }
 ];
 
 async function checkStatus() {
@@ -20,7 +20,6 @@ async function checkStatus() {
     try {
       let res;
       if (ep.method === 'POST' && ep.testBody) {
-        // POST test
         res = await fetch(ep.path, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -28,7 +27,6 @@ async function checkStatus() {
           signal: AbortSignal.timeout(5000)
         });
       } else {
-        // HEAD test
         res = await fetch(ep.path, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
       }
       
@@ -36,7 +34,6 @@ async function checkStatus() {
       if (ok) {
         li.lastElementChild.innerHTML = '<span class="text-green-400">✅ ทำงาน</span>';
       } else {
-        // พยายามอ่าน error response
         let errorDetail = '';
         try {
           const errorData = await res.clone().json();
@@ -54,3 +51,16 @@ async function checkStatus() {
 checkStatus();
 setInterval(checkStatus, 30000);
 </script>
+
+<div class="flex justify-between items-start mb-3">
+    <div class="flex items-center gap-3">
+        <div class="text-3xl">📊</div>
+        <h2 class="text-xl font-bold">สถานะระบบ</h2>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="/api-check.html" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-full transition flex items-center gap-1">
+            🔍 ตรวจสอบ API
+        </a>
+        <span id="lastCheck" class="text-xs text-gray-500">กำลังเช็ค...</span>
+    </div>
+</div>
