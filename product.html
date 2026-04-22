@@ -101,7 +101,19 @@
     const preview = document.getElementById('tiktokPreview');
     const btn = document.getElementById('tiktokBtn');
 
-    if (!url.includes('tiktok.com')) {
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(url);
+    } catch (e) {
+      alert('กรุณาวางลิงก์ TikTok');
+      return;
+    }
+
+    const host = parsedUrl.hostname.toLowerCase();
+    const isTikTokHost = host === 'tiktok.com' || host.endsWith('.tiktok.com');
+    const isHttp = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+
+    if (!isHttp || !isTikTokHost) {
       alert('กรุณาวางลิงก์ TikTok');
       return;
     }
