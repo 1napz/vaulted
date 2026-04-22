@@ -8,7 +8,7 @@
   <style>
     body { font-family: 'Sarabun', sans-serif; }
     @keyframes spin { to { transform: rotate(360deg); } }
-   .spin { animation: spin 1s linear infinite; }
+  .spin { animation: spin 1s linear infinite; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen">
@@ -60,7 +60,7 @@
         <input id="filenameInput" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm bg-gray-50">
       </div>
 
-      <!-- 3. Prompt - ปรับใหม่ -->
+      <!-- 3. Prompt -->
       <div class="space-y-2">
         <label class="block text-sm font-semibold text-gray-700">3. Prompt สำหรับเจนคลิป</label>
         <div class="flex gap-2 items-start">
@@ -77,13 +77,35 @@
             ✨ Gen AI
           </button>
         </div>
-        <!-- แถบสถานะใหม่ -->
         <div class="flex items-center justify-between text-xs px-1">
           <span id="promptStatus" class="text-gray-500">พร้อมให้ AI แต่ง prompt</span>
           <div class="flex gap-3">
             <button id="copyPromptBtn" class="hidden text-purple-600 font-medium hover:underline">📋 คัดลอก</button>
             <button id="undoPromptBtn" class="hidden text-gray-500 hover:underline">↶ ใช้ต้นฉบับ</button>
           </div>
+        </div>
+      </div>
+
+      <!-- 3.5 Generate Post - เพิ่มใหม่ -->
+      <div class="space-y-2 pt-4 border-t border-gray-100">
+        <div class="flex items-center justify-between">
+          <label class="block text-sm font-semibold text-gray-700">3.5 แคปชั่นสำหรับโพสต์</label>
+          <button
+            id="genPostBtn"
+            class="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-medium hover:bg-black transition"
+          >
+            📝 Generate Post
+          </button>
+        </div>
+        <textarea
+          id="postOutput"
+          rows="4"
+          placeholder="กดปุ่มด้านบนเพื่อสร้างแคปชั่นอัตโนมัติ"
+          class="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 leading-relaxed"
+          readonly
+        ></textarea>
+        <div class="flex justify-end">
+          <button id="copyPostBtn" class="hidden text-xs text-purple-600 font-medium hover:underline">📋 คัดลอกแคปชั่น</button>
         </div>
       </div>
 
@@ -106,7 +128,7 @@
     </section>
 
     <footer class="text-center mt-8 text-xs text-gray-500">
-      Crystal Castle Lite v1.1 | Groq + Magic Hour
+      Crystal Castle Lite v1.2 | Groq + Magic Hour + Auto Post
     </footer>
 
   </div>
