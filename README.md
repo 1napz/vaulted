@@ -1,4 +1,4 @@
-# 🎬 Crystal Castle Lite v1.3
+# 🎬 Crystal Castle Lite v1.3.
 
 **เครื่องเจียระไน Lite** — อัพรูปสินค้า → AI แต่ง Prompt → เจนวิดีโอ → สร้างแคปชั่นอัตโนมัติ
 
