@@ -19,7 +19,7 @@
 
 <div class="max-w-xl mx-auto min-h-screen relative pb-28">
   
-  <!-- Header -->
+  <!-- Header ใหม่: มีชื่อผู้ใช้ + ปุ่ม Logout + ลิงก์ไปผลงาน -->
   <header class="sticky top-0 z-30 backdrop-blur-xl">
     <div class="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 px-5 pt-6 pb-8 rounded-b-[2rem] shadow-lg shadow-indigo-500/20">
       <div class="flex items-center justify-between">
@@ -29,10 +29,17 @@
           </div>
           <div>
             <h1 class="text-white text-xl font-semibold tracking-tight">Crystal Castle</h1>
-            <p class="text-white/70 text-[11px] -mt-0.5">AI Video Generator</p>
+            <p id="userName" class="text-white/70 text-[11px] -mt-0.5">กำลังโหลด...</p>
           </div>
         </div>
-        <a href="/index.html" class="text-white/80 text-sm bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition">🏠 หน้าแรก</a>
+        <div class="flex items-center gap-2">
+          <a href="/artifact.html" class="text-white/80 text-xs bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition flex items-center gap-1">
+            📁 ผลงาน
+          </a>
+          <button id="logoutBtn" class="text-white/80 text-xs bg-white/10 px-3 py-1.5 rounded-full hover:bg-red-500/30 transition flex items-center gap-1">
+            🚪 ออกจากระบบ
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -174,7 +181,28 @@
   </div>
 </div>
 
-<!-- โหลด product.js ที่มี logic ครบถ้วน -->
+<!-- โหลด auth.js (ระบบ login) และ product.js (logic หลัก) -->
+<script type="module">
+  import { supabase, requireAuth, getUserDisplayName, logout } from './auth.js'
+  
+  // ตรวจสอบการล็อกอิน และแสดงชื่อผู้ใช้
+  const user = await requireAuth()
+  if (user) {
+    const userNameSpan = document.getElementById('userName')
+    if (userNameSpan) {
+      userNameSpan.textContent = `สวัสดี ${getUserDisplayName(user)}`
+    }
+  }
+  
+  // ปุ่มออกจากระบบ
+  const logoutBtn = document.getElementById('logoutBtn')
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await logout()
+    })
+  }
+</script>
+
 <script src="product.js"></script>
 </body>
 </html>
