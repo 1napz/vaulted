@@ -1,6 +1,4 @@
-// เพิ่ม import ที่ด้านบนสุดของ product.js
-import removeBackground from '@imgly/background-removal';
-// product.js - เวอร์ชันใช้ previewGrid (รองรับหลายรูป)
+// product.js - ฉบับสมบูรณ์ (แก้ไขซ้ำซ้อน + เพิ่ม Slideshow)
 const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 const previewGrid = document.getElementById('previewGrid');
@@ -9,6 +7,7 @@ const promptInput = document.getElementById('promptInput');
 const genPromptBtn = document.getElementById('genPromptBtn');
 const genFALBtn = document.getElementById('genFALBtn');
 const genHFBtn = document.getElementById('genHFBtn');
+const genSlideshowBtn = document.getElementById('genSlideshowBtn');
 const statusText = document.getElementById('statusText');
 const categorySelect = document.getElementById('categorySelect');
 const brandInput = document.getElementById('brandInput');
@@ -23,7 +22,20 @@ const generateBtn = document.getElementById('generateBtn');
 
 let selectedFiles = [];
 
-// ฟังก์ชันอัปเดตชื่อไฟล์อัตโนมัติ
+// ========== UTILITY FUNCTIONS ==========
+function checkDuplicateName(name) {
+    const saved = JSON.parse(localStorage.getItem('filenames') || '[]');
+    return saved.includes(name);
+}
+
+function saveFilename(name) {
+    const saved = JSON.parse(localStorage.getItem('filenames') || '[]');
+    if (!saved.includes(name)) {
+        saved.push(name);
+        localStorage.setItem('filenames', JSON.stringify(saved));
+    }
+}
+
 function updateFilename() {
     const now = new Date();
     const yyyymmdd = now.getFullYear().toString() + 
@@ -36,16 +48,9 @@ function updateFilename() {
     filenameInput.value = `${yyyymmdd}-${category}-${brand}-${count}img`;
 }
 
-document.addEventListener('DOMContentLoaded', updateFilename);
-categorySelect?.addEventListener('change', updateFilename);
-brandInput?.addEventListener('input', updateFilename);
+// ========== IMAGE UPLOAD & PREVIEW ==========
+uploadBtn?.addEventListener('click', () => fileInput.click());
 
-// เปิดเลือกไฟล์
-uploadBtn?.addEventListener('click', () => {
-    fileInput.click();
-});
-
-// แสดงตัวอย่างรูป
 function renderPreview() {
     if (!previewGrid) return;
     previewGrid.innerHTML = '';
@@ -54,7 +59,6 @@ function renderPreview() {
         const emptyDiv = document.createElement('div');
         emptyDiv.className = 'aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50';
         
-        // สร้าง SVG อย่างปลอดภัย
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', '28');
         svg.setAttribute('height', '28');
@@ -83,7 +87,6 @@ function renderPreview() {
         wrap.className = 'relative aspect-square bg-slate-100 rounded-xl overflow-hidden group';
         
         const img = document.createElement('img');
-        // 🔥 ปลอดภัย: ใช้ URL.createObjectURL แทนการรับค่าตรงๆ
         img.src = URL.createObjectURL(fileObj.file);
         img.alt = 'Product image';
         img.className = 'w-full h-full object-cover';
@@ -107,33 +110,6 @@ function renderPreview() {
     updateFilename();
 }
 
-    selectedFiles.forEach((fileObj, idx) => {
-        const wrap = document.createElement('div');
-        wrap.className = 'relative aspect-square bg-slate-100 rounded-xl overflow-hidden group';
-        
-        const img = document.createElement('img');
-        img.src = fileObj.url;
-        img.alt = 'รูปสินค้า';
-        img.className = 'w-full h-full object-cover';
-        
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition';
-        btn.textContent = '×';
-        btn.onclick = () => {
-            URL.revokeObjectURL(fileObj.url);
-            selectedFiles.splice(idx, 1);
-            renderPreview();
-        };
-        
-        wrap.appendChild(img);
-        wrap.appendChild(btn);
-        previewGrid.appendChild(wrap);
-    });
-    updateFilename();
-}
-
-// เมื่อเลือกไฟล์
 fileInput?.addEventListener('change', (e) => {
     const files = Array.from(e.target.files || []);
     files.forEach(f => {
@@ -149,7 +125,7 @@ fileInput?.addEventListener('change', (e) => {
     renderPreview();
 });
 
-// Prompt Templates
+// ========== PROMPT TEMPLATES ==========
 const promptTemplates = {
     'Menswear': 'Professional fashion video of {brand} menswear. Slow cinematic pan around male model, sharp focus on fabric texture and fit. Clean white studio background, soft natural lighting.',
     'Womenswear': 'Elegant fashion video of {brand} womenswear. Female model walking gracefully, flowy fabric movement in slow motion. Soft dramatic lighting, warm tone.',
@@ -161,7 +137,7 @@ const promptTemplates = {
 
 let lastOriginalPrompt = '';
 
-// สร้าง Prompt ด้วย AI
+// ========== AI PROMPT ==========
 genPromptBtn?.addEventListener('click', async () => {
     const brand = brandInput?.value.trim() || 'สินค้า';
     const category = categorySelect?.value || 'default';
@@ -212,7 +188,7 @@ undoPromptBtn?.addEventListener('click', () => {
     }
 });
 
-// สร้างแคปชั่น
+// ========== AI CAPTION ==========
 genPostBtn?.addEventListener('click', async () => {
     const prompt = promptInput.value.trim();
     if (!prompt) return alert('สร้าง Prompt ก่อน');
@@ -260,7 +236,7 @@ copyPostBtn?.addEventListener('click', () => {
     }, 2000);
 });
 
-// ฟังก์ชันสร้างวิดีโอ (ใช้รูปแรก)
+// ========== GENERATE VIDEO (AI) ==========
 async function generateVideo(engine) {
     if (selectedFiles.length === 0) {
         alert('กรุณาอัปโหลดรูปสินค้าก่อน');
@@ -337,5 +313,122 @@ async function generateVideo(engine) {
 genFALBtn?.addEventListener('click', () => generateVideo('FAL'));
 genHFBtn?.addEventListener('click', () => generateVideo('HF'));
 
+// ========== SLIDESHOW GENERATOR (FREE, NO API) ==========
+async function generateSlideshow() {
+    if (selectedFiles.length === 0) {
+        alert('กรุณาอัปโหลดรูปสินค้าก่อน');
+        return;
+    }
+    
+    if (genSlideshowBtn) genSlideshowBtn.disabled = true;
+    if (generateBtn) generateBtn.disabled = true;
+    if (statusText) {
+        statusText.classList.remove('hidden');
+        statusText.innerHTML = '🎬 กำลังสร้างสไลด์โชว์ กรุณารอสักครู่...';
+    }
+    
+    try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const width = 1080;
+        const height = 1920; // 9:16 aspect ratio for TikTok
+        canvas.width = width;
+        canvas.height = height;
+        
+        const stream = canvas.captureStream(30);
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+        
+        recorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+        
+        recorder.onstop = async () => {
+            const blob = new Blob(chunks, { type: 'video/mp4' });
+            const videoUrl = URL.createObjectURL(blob);
+            
+            if (statusText) {
+                statusText.innerHTML = `✅ สร้างสไลด์โชว์สำเร็จ! <a href="${videoUrl}" target="_blank" class="underline text-blue-400">เปิดวิดีโอ</a> | <a href="${videoUrl}" download="slideshow.mp4" class="underline text-purple-400">ดาวน์โหลด</a>`;
+            }
+            
+            const videoEl = document.createElement('video');
+            videoEl.src = videoUrl;
+            videoEl.controls = true;
+            videoEl.autoplay = true;
+            videoEl.loop = true;
+            videoEl.className = 'w-full rounded-xl mt-3 col-span-3';
+            
+            if (previewGrid) {
+                previewGrid.innerHTML = '';
+                previewGrid.appendChild(videoEl);
+            }
+            
+            if (genSlideshowBtn) genSlideshowBtn.disabled = false;
+            if (generateBtn) generateBtn.disabled = false;
+        };
+        
+        recorder.start();
+        
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const displayTime = 2500; // 2.5 seconds per image
+        
+        for (let i = 0; i < selectedFiles.length; i++) {
+            const img = new Image();
+            img.src = URL.createObjectURL(selectedFiles[i].file);
+            await img.decode();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            
+            const scale = Math.max(width / img.width, height / img.height);
+            const x = (width - img.width * scale) / 2;
+            const y = (height - img.height * scale) / 2;
+            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+            
+            const brandText = brandInput?.value.trim() || 'สินค้า';
+            const categoryText = categorySelect?.value || '';
+            
+            ctx.font = 'bold 56px "Noto Sans Thai"';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0,0,0,0.7)';
+            ctx.shadowBlur = 12;
+            ctx.fillText(brandText, 50, height - 100);
+            
+            if (categoryText) {
+                ctx.font = '42px "Noto Sans Thai"';
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillText(categoryText, 50, height - 40);
+            }
+            ctx.shadowBlur = 0;
+            
+            if (statusText) {
+                statusText.innerHTML = `🎬 กำลังสร้าง... (รูปที่ ${i+1}/${selectedFiles.length})`;
+            }
+            
+            await delay(displayTime);
+            URL.revokeObjectURL(img.src);
+        }
+        
+        recorder.stop();
+        
+    } catch (err) {
+        console.error('Slideshow error:', err);
+        if (statusText) statusText.innerHTML = `❌ เกิดข้อผิดพลาด: ${err.message}`;
+        if (genSlideshowBtn) genSlideshowBtn.disabled = false;
+        if (generateBtn) generateBtn.disabled = false;
+    }
+}
+
+if (genSlideshowBtn) {
+    genSlideshowBtn.addEventListener('click', generateSlideshow);
+}
+
+// ========== INITIAL RENDER ==========
 renderPreview();
 updateFilename();
+
+// เพิ่ม event listener สำหรับ DOMContentLoaded (เผื่อกรณี)
+document.addEventListener('DOMContentLoaded', () => {
+    renderPreview();
+    updateFilename();
+});
