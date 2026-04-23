@@ -1,4 +1,4 @@
-// product.js - ฉบับสมบูรณ์ (แก้ไขซ้ำซ้อน + เพิ่ม Slideshow)
+// product.js - ฉบับสมบูรณ์ (แก้ไขซ้ำซ้อน + เพิ่ม Slideshow + CTA Video)
 const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 const previewGrid = document.getElementById('previewGrid');
@@ -434,38 +434,34 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// ========== TIKTOK STYLE VIDEO GENERATOR (CANVAS + ANIMATION) ==========
-// เพิ่มปุ่มอ้างอิง (ต้องมี id="genTikTokBtn" ใน product.html ด้วย)
-const genTikTokBtn = document.getElementById('genTikTokBtn');
+// ========== CALL TO ACTION VIDEO GENERATOR (CANVAS + ANIMATION) ==========
+const genCTABtn = document.getElementById('genCTABtn');
 
-async function generateTikTokVideo() {
-    // ตรวจสอบว่ามีรูปหรือไม่
+async function generateCallToActionScene() {
     if (selectedFiles.length === 0) {
         alert('กรุณาอัปโหลดรูปสินค้าก่อน');
         return;
     }
 
-    // ดึงข้อมูลจากฟอร์ม
     const productName = brandInput?.value.trim() || 'สินค้า';
     const price = prompt('💰 กรอกราคาสินค้า (บาท)', '299');
     if (!price) return;
     
     const discount = prompt('🔥 ส่วนลด (%) (ถ้ามี, ไม่มีกดยกเลิก)', '');
     const discountPercent = discount ? parseInt(discount) : 0;
+    
+    const ctaText = prompt('📢 ข้อความ Call to Action (เช่น "⚡ สินค้าจำกัด! ⚡")', '⚡ สินค้าจำกัด! ⚡');
 
-    // แสดงสถานะและ disable ปุ่ม
     if (statusText) {
         statusText.classList.remove('hidden');
-        statusText.innerHTML = '🎬 กำลังสร้างวิดีโอ TikTok Style... (ใช้เวลาประมาณ 10-15 วินาที)';
+        statusText.innerHTML = '🎬 กำลังสร้าง CTA Video... (ใช้เวลาประมาณ 10-15 วินาที)';
     }
-    if (genTikTokBtn) genTikTokBtn.disabled = true;
+    if (genCTABtn) genCTABtn.disabled = true;
     if (generateBtn) generateBtn.disabled = true;
 
-    // ตั้งค่าความยาววิดีโอ (หน่วยเป็นมิลลิวินาที)
-    const durationMs = 8000; // 8 วินาที
+    const durationMs = 8000;
     const startTime = performance.now();
     
-    // สร้าง Canvas และ Stream
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1080;
@@ -476,9 +472,7 @@ async function generateTikTokVideo() {
     const chunks = [];
 
     recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-            chunks.push(event.data);
-        }
+        if (event.data.size > 0) chunks.push(event.data);
     };
 
     recorder.onstop = () => {
@@ -486,10 +480,10 @@ async function generateTikTokVideo() {
         const videoUrl = URL.createObjectURL(blob);
         if (statusText) {
             statusText.innerHTML = `
-                ✅ สร้างวิดีโอ TikTok Style สำเร็จ! 
+                ✅ สร้าง CTA Video สำเร็จ! 
                 <a href="${videoUrl}" target="_blank" class="underline text-blue-400">▶ เปิดดูวิดีโอ</a> | 
-                <a href="${videoUrl}" download="tiktok-video-${Date.now()}.mp4" class="underline text-purple-400">💾 ดาวน์โหลด</a>
-                <br><span class="text-xs text-gray-500">🎬 วิดีโอความยาว 8 วินาที พร้อมอัปโหลดขึ้น TikTok หรือ Shopee</span>
+                <a href="${videoUrl}" download="cta-video-${Date.now()}.mp4" class="underline text-purple-400">💾 ดาวน์โหลด</a>
+                <br><span class="text-xs text-gray-500">📢 วิดีโอพร้อมใช้โฆษณาสินค้า</span>
             `;
         }
         if (previewGrid) {
@@ -502,28 +496,23 @@ async function generateTikTokVideo() {
             previewGrid.innerHTML = '';
             previewGrid.appendChild(videoEl);
         }
-        saveFilename(`tiktok-${productName}-${Date.now()}`);
-        if (genTikTokBtn) genTikTokBtn.disabled = false;
+        saveFilename(`cta-${productName}-${Date.now()}`);
+        if (genCTABtn) genCTABtn.disabled = false;
         if (generateBtn) generateBtn.disabled = false;
     };
 
-    // เริ่มบันทึก
     recorder.start();
     
-    // โหลดรูปสินค้า
     const productImg = new Image();
     productImg.src = selectedFiles[0].url;
     await productImg.decode();
     
-    // ฟังก์ชันสำหรับวาดแต่ละเฟรม
     const drawFrame = (now) => {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / durationMs, 1);
         
-        // วาดฉาก
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // พื้นหลัง Gradient
         const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
         grad.addColorStop(0, '#ff6b6b');
         grad.addColorStop(0.5, '#ee5a24');
@@ -531,20 +520,17 @@ async function generateTikTokVideo() {
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Animation ซูมเข้าสินค้า
         const scale = 0.7 + progress * 0.35;
         const imgW = canvas.width * scale;
         const imgH = canvas.height * scale;
         ctx.drawImage(productImg, (canvas.width - imgW) / 2, (canvas.height - imgH) / 2, imgW, imgH);
         
-        // Overlay Gradient
-        const overlayGrad = ctx.createLinearGradient(0, canvas.height - 300, 0, canvas.height);
+        const overlayGrad = ctx.createLinearGradient(0, canvas.height - 350, 0, canvas.height);
         overlayGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        overlayGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+        overlayGrad.addColorStop(1, 'rgba(0,0,0,0.8)');
         ctx.fillStyle = overlayGrad;
-        ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
+        ctx.fillRect(0, canvas.height - 350, canvas.width, 350);
         
-        // ชื่อสินค้า (Slide from top)
         ctx.font = 'bold 68px "Noto Sans Thai"';
         ctx.fillStyle = '#ffffff';
         ctx.shadowBlur = 12;
@@ -552,13 +538,11 @@ async function generateTikTokVideo() {
         const titleY = 150 + Math.min(elapsed / 40, 200);
         ctx.fillText(productName, 60, titleY);
         
-        // ราคา (Bounce Effect)
         const bounce = Math.sin(elapsed / 100 * 15) * 12;
         ctx.font = 'bold 96px "Noto Sans Thai"';
         ctx.fillStyle = '#f9ca24';
         ctx.fillText(`฿${price}`, 100, 700 + bounce);
         
-        // ส่วนลด (Blink Effect)
         if (discountPercent > 0) {
             const blink = Math.sin(elapsed / 100 * 20) > 0;
             if (blink) {
@@ -568,10 +552,18 @@ async function generateTikTokVideo() {
             }
         }
         
-        // Call to Action
+        const ctaBlink = Math.sin(elapsed / 100 * 8) > 0;
+        if (ctaBlink) {
+            ctx.font = 'bold 64px "Noto Sans Thai"';
+            ctx.fillStyle = '#ffeb3b';
+            ctx.shadowBlur = 15;
+            ctx.fillText(ctaText, 100, canvas.height - 220);
+        }
+        
         ctx.font = '38px "Noto Sans Thai"';
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx.fillText('⚡ สินค้าจำกัด! ⚡', 220, canvas.height - 180);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillText('👇 กดเลย! 👇', canvas.width / 2 - 100, canvas.height - 120);
+        
         ctx.font = '28px "Noto Sans Thai"';
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
         ctx.fillText('Crystal Castle AI', 50, canvas.height - 60);
@@ -586,7 +578,6 @@ async function generateTikTokVideo() {
     requestAnimationFrame(drawFrame);
 }
 
-// ผูก Event ให้ปุ่ม TikTok (ถ้ามีใน HTML)
-if (genTikTokBtn) {
-    genTikTokBtn.addEventListener('click', generateTikTokVideo);
+if (genCTABtn) {
+    genCTABtn.addEventListener('click', generateCallToActionScene);
 }
