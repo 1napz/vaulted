@@ -413,7 +413,7 @@ async function generateSlideshow() {
         
     } catch (err) {
         console.error('Slideshow error:', err);
-        if (statusText) statusText.innerHTML = `❌ เกิดข้อผิดพลาด: ${err.message}`;
+        if (statusText) statusText.textContent = `❌ เกิดข้อผิดพลาด: ${err.message}`;
         if (genSlideshowBtn) genSlideshowBtn.disabled = false;
         if (generateBtn) generateBtn.disabled = false;
     }
