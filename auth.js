@@ -7,7 +7,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // 🔥 กำหนดอีเมล Admin (ไม่ต้อง Login)
 const ADMIN_EMAILS = [
-    'your-email@gmail.com',      // <-- ใส่อีเมลคุณตรงนี้
+    'nobizzmaru@gmail.com',      // <-- ใส่อีเมลคุณตรงนี้
     'team@crystalcastle.com'     // <-- เพิ่มอีเมลทีมได้
 ]
 
