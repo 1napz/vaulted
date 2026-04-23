@@ -25,6 +25,14 @@
     </div>
 
     <script>
+        function escapeHtmlAttr(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
         async function loadArtifacts() {
             try {
                 const res = await fetch('/api/get-artifacts');
@@ -46,16 +54,24 @@
                             </div>
                             <p class="text-sm text-gray-400 line-clamp-3 mb-3">${art.prompt.substring(0, 120)}...</p>
                             <div class="flex gap-2">
-                                <button onclick="copyPrompt('${art.prompt.replace(/'/g, "\\'")}')" class="text-xs bg-gray-700 px-2 py-1 rounded hover:bg-gray-600">
+                                <button data-prompt="${escapeHtmlAttr(art.prompt)}" class="copy-prompt-btn text-xs bg-gray-700 px-2 py-1 rounded hover:bg-gray-600">
                                     📋 คัดลอก Prompt
                                 </button>
-                                <button onclick="usePrompt('${art.prompt.replace(/'/g, "\\'")}')" class="text-xs bg-purple-700 px-2 py-1 rounded hover:bg-purple-600">
+                                <button data-prompt="${escapeHtmlAttr(art.prompt)}" class="use-prompt-btn text-xs bg-purple-700 px-2 py-1 rounded hover:bg-purple-600">
                                     ✨ ใช้สร้างใหม่
                                 </button>
                             </div>
                         </div>
                     </div>
                 `).join('');
+
+                grid.querySelectorAll('.copy-prompt-btn').forEach(button => {
+                    button.addEventListener('click', () => copyPrompt(button.dataset.prompt || ''));
+                });
+
+                grid.querySelectorAll('.use-prompt-btn').forEach(button => {
+                    button.addEventListener('click', () => usePrompt(button.dataset.prompt || ''));
+                });
             } catch (err) {
                 console.error('Load error:', err);
                 document.getElementById('artifactsGrid').innerHTML = '<div class="col-span-full text-center text-red-400 py-12">โหลดข้อมูลไม่สำเร็จ</div>';
