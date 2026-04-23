@@ -1,3 +1,5 @@
+// เพิ่ม import ที่ด้านบนสุดของ product.js
+import removeBackground from '@imgly/background-removal';
 // product.js - เวอร์ชันใช้ previewGrid (รองรับหลายรูป)
 const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
