@@ -203,6 +203,7 @@ copyPostBtn?.addEventListener('click', () => {
 });
 
 // ฟังก์ชันหลักสร้างวิดีโอ (อัปโหลดรูป + สร้างวิดีโอ)
+// ฟังก์ชันหลักสร้างวิดีโอ (อัปโหลดรูป + สร้างวิดีโอ + บันทึกข้อมูล)
 async function generateVideo(engine) {
     const file = fileInput.files[0];
     const customFilename = filenameInput.value.trim();
@@ -223,12 +224,16 @@ async function generateVideo(engine) {
     statusText.classList.remove('hidden');
     statusText.textContent = engine === 'FAL' ? '🚀 กำลังส่งไป FAL...' : '🆓 กำลังส่งไป Magic Hour...';
     
+    // ตัวแปรเก็บข้อมูลสำหรับบันทึก
+    let imageUrl = '';
+    let videoUrl = '';
+    
     try {
-        // ขั้นตอนที่ 1: อัปโหลดรูป (เรียก /api/photo แทน /api/upload)
+        // ขั้นตอนที่ 1: อัปโหลดรูป (เรียก /api/upload)
         const fileExt = file.name.split('.').pop();
         const finalFilename = `${customFilename}.${fileExt}`;
         
-        const uploadRes = await fetch('/api/photo', {
+        const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             headers: {
                 'x-filename': finalFilename,
@@ -242,9 +247,10 @@ async function generateVideo(engine) {
             throw new Error(errorData.error || 'อัปโหลดรูปไม่สำเร็จ');
         }
         
-        const { url: imageUrl } = await uploadRes.json();
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
         
-        // ขั้นตอนที่ 2: สร้างวิดีโอ (ใช้ /api/video แทน FAL, /api/magichour คงเดิม)
+        // ขั้นตอนที่ 2: สร้างวิดีโอ
         statusText.textContent = engine === 'FAL' ? '⚡️ กำลังเจนวิดีโอ (FAL) 1-2 นาที...' : '⏳ กำลังเจนวิดีโอ (Magic Hour) 3-5 นาที...';
         
         const apiUrl = engine === 'FAL' ? '/api/video' : '/api/magichour';
@@ -262,11 +268,39 @@ async function generateVideo(engine) {
         if(!genRes.ok) throw new Error(data.error || 'สร้างวิดีโอไม่สำเร็จ');
         if(!data.video_url) throw new Error('ไม่ได้รับลิงก์วิดีโอ');
         
+        videoUrl = data.video_url;
+        
+        // 🔥 ขั้นตอนที่ 3: บันทึกข้อมูลลง Artifact (เพิ่มส่วนนี้)
+        try {
+            const saveRes = await fetch('/api/save-artifact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    video_url: videoUrl,
+                    prompt: prompt,
+                    filename: customFilename,
+                    category: categorySelect?.value || '',
+                    brand: brandInput?.value || '',
+                    image_url: imageUrl,
+                    engine: engine
+                })
+            });
+            
+            if (saveRes.ok) {
+                console.log('✅ บันทึกข้อมูลสำเร็จ');
+            } else {
+                console.warn('⚠️ บันทึกข้อมูลไม่สำเร็จ');
+            }
+        } catch(saveErr) {
+            console.error('Save artifact error:', saveErr);
+            // ไม่ต้อง throw แค่ log ไว้ เพราะวิดีโอสร้างสำเร็จแล้ว
+        }
+        
         // สำเร็จ: แสดงผล
-        statusText.innerHTML = `✅ สำเร็จ! <a href="${data.video_url}" target="_blank" class="underline text-blue-400">เปิดวิดีโอถาวร</a>`;
+        statusText.innerHTML = `✅ สำเร็จ! <a href="${videoUrl}" target="_blank" class="underline text-blue-400">เปิดวิดีโอถาวร</a> | <a href="/artifact.html" class="underline text-purple-400">ดูผลงานทั้งหมด</a>`;
         
         const videoEl = document.createElement('video');
-        videoEl.src = data.video_url;
+        videoEl.src = videoUrl;
         videoEl.controls = true;
         videoEl.autoplay = true;
         videoEl.loop = true;
