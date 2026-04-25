@@ -1,4 +1,3 @@
-# .github/workflows/auto-label.yml
 name: Auto Label PR
 
 on:
@@ -8,6 +7,8 @@ on:
 jobs:
   label:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # ✅ เพิ่มแล้ว
     steps:
       - uses: actions/labeler@v4
         with:
