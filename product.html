@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>Crystal Castle — AI Video Generator</title>
+<title>@snapzreview — AI Video Generator</title> 1napz-patch-66
+=======
+<meta name="description" content="สร้างวิดีโอ AI จากรูปสินค้า
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -25,7 +27,7 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 3l7 4v5c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V7l7-4z"/></svg>
           </div>
           <div>
-            <h1 class="text-white text-xl font-semibold tracking-tight">Crystal Castle</h1>
+            <h1 class="text-white text-xl font-semibold tracking-tight">@snapzreview</h1>
             <p id="userName" class="text-white/70 text-[11px] -mt-0.5">สวัสดี User</p>
           </div>
         </div>
@@ -146,26 +148,27 @@
         <span class="w-7 h-7 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-semibold">5</span>
         <h2 class="font-semibold text-slate-900">เลือกเครื่องมือ</h2>
       </div>
- <div class="grid grid-cols-6 gap-2">
-  <button id="genFALBtn" class="h-12 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
-    🎬 Kling
-  </button>
-  <button id="genHFBtn" class="h-12 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
-    ✨ Magic
-  </button>
-  <button id="genIntroBtn" class="h-12 rounded-xl bg-blue-500 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
-    ✨ Gen Intro
-  </button>
-  <button id="genCTABtn" class="h-12 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
-    🔥 Gen CTA
-  </button>
-  <button id="genThumbnailBtn" class="h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
-    🎨 Thumbnail
-  </button>
-</div>
-<p class="text-[11px] text-slate-500 mt-2 text-center">
-  Kling (จ่าย) • Magic Hour (ฟรี) • Intro (ฟรี 2.5วิ) • CTA (ฟรี 5.5วิ) • Thumbnail (ฟรี)
-</p>>
+      <div class="grid grid-cols-5 gap-2">
+        <button id="genFALBtn" class="h-12 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
+          🎬 Kling
+        </button>
+        <button id="genHFBtn" class="h-12 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
+          ✨ Magic
+        </button>
+        <button id="genIntroBtn" class="h-12 rounded-xl bg-blue-500 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
+          🎞️ Intro
+        </button>
+        <button id="genCTABtn" class="h-12 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
+          🔥 CTA
+        </button>
+        <button id="genThumbnailBtn" class="h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-sm font-medium shadow-sm hover:shadow-md transition active:scale-[0.98]">
+          🎨 Thumb
+        </button>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-2 text-center">
+        Kling (จ่าย) • Magic Hour (ฟรี) • Intro (ฟรี 2.5วิ) • CTA (ฟรี 5.5วิ) • Thumbnail (ฟรี)
+      </p>
+    </section>
 
     <!-- สถานะ -->
     <div id="statusText" class="text-center text-sm text-slate-500 py-2 hidden"></div>

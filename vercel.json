@@ -29,9 +29,9 @@
   ],
   "functions": {
     "api/upload.js": { "maxDuration": 10 },
-    "api/video.js": { "maxDuration": 10 },
-    "api/magichour.js": { "maxDuration": 10 },
-    "api/prompt.js": { "maxDuration": 10 },
+    "api/video.js": { "maxDuration": 30 },
+    "api/magichour.js": { "maxDuration": 30 },
+    "api/prompt.js": { "maxDuration": 15 },
     "api/post.js": { "maxDuration": 10 },
     "api/get-logs.js": { "maxDuration": 10 },
     "api/artifacts.js": { "maxDuration": 10 }

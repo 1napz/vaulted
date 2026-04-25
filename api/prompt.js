@@ -1,84 +1,45 @@
+// api/prompt.js
+import { createClient } from '@supabase/supabase-js';
+import Groq from 'groq-sdk';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 export default async function handler(req, res) {
-  // เปิด CORS สำหรับ dev
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  
-  if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      error: 'Method not allowed',
-      details: 'ใช้เฉพาะ POST เท่านั้น'
-    });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { user_prompt, category } = req.body;
+  const userPrompt = req.body.user_prompt || req.body.prompt;
+  if (!userPrompt) return res.status(400).json({ error: 'Missing prompt' });
 
-  // ตรวจสอบว่าได้รับข้อมูลหรือไม่
-  if (!user_prompt) {
-    return res.status(400).json({ 
-      error: 'Missing user_prompt',
-      details: 'กรุณาส่ง user_prompt มาใน body'
-    });
-  }
+  const start = Date.now();
+  let result = '';
+  let model = 'groq/llama3-8b-8192';
 
   try {
-    // ตรวจสอบ API key
-    if (!process.env.GROQ_API_KEY) {
-      console.warn('⚠️ GROQ_API_KEY not set');
-      return res.status(200).json({ 
-        enhanced_prompt: `${user_prompt} (AI ไม่ทำงาน: ไม่มี API Key)`,
-        warning: 'GROQ_API_KEY not configured'
-      });
-    }
-
-    console.log(`📝 Calling Groq for prompt, category: ${category}`);
-    
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ 
-          role: 'user', 
-          content: `You are a professional fashion video director. Improve this English video prompt to be more cinematic, specific, and professional. Keep it concise (under 80 words), use technical terms (pan, orbit, close-up, slow motion, lighting). Return ONLY the improved prompt, no explanations.
-
-Original prompt: ${user_prompt}
-
-Improved prompt:` 
-        }],
-        temperature: 0.7,
-        max_tokens: 500
-      })
+    const chat = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: userPrompt }],
+      model: 'llama3-8b-8192',
     });
+    result = chat.choices[0]?.message?.content || '';
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Groq API error: ${response.status}`, errorText);
-      return res.status(502).json({ 
-        error: 'Groq API failed',
-        status: response.status,
-        details: errorText,
-        fallback_prompt: user_prompt
-      });
-    }
+    // Log to Supabase
+    await supabase.from('groq_logs').insert({
+      request_id: chat.id,
+      model,
+      prompt: userPrompt,
+      response: result,
+      latency_ms: Date.now() - start,
+    }).catch(e => console.error('Log insert error:', e));
 
-    const data = await response.json();
-    const enhanced = data.choices?.[0]?.message?.content || user_prompt;
-    
-    console.log('✅ Prompt enhanced successfully');
-    res.status(200).json({ 
-      enhanced_prompt: enhanced,
-      original_prompt: user_prompt,
-      status: 'success'
-    });
-    
-  } catch (error) {
-    console.error('🔥 Prompt handler error:', error.message);
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message,
-      fallback_prompt: user_prompt
-    });
+  } catch (groqErr) {
+    console.error('Groq failed:', groqErr.message);
+    // Fallback: ยังไม่ทำ (แต่เตรียมไว้)
+    return res.status(500).json({ error: `Groq failed: ${groqErr.message}` });
   }
+
+  return res.status(200).json({ result, latency: Date.now() - start, model });
 }
