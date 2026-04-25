@@ -3,6 +3,11 @@ node_modules/
 .pnp
 .pnp.js
 
+# Temporary and checkpoint files (จาก Codespaces / Jupyter)
+untitled*
+*.checkpoint*
+*.ipynb_checkpoints*
+
 # Environment
 .env
 .env.local
