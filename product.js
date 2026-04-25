@@ -1,6 +1,4 @@
-// product.js — ฉบับ Optimize (Error Recovery + AbortController + Memory Safety)
-// Crystal Castle AI Video Studio
-
+// product.js — Crystal Castle AI Video Studio
 // ========== DOM REFS ==========
 const $ = (id) => document.getElementById(id);
 const fileInput = $('fileInput');
@@ -26,16 +24,14 @@ const generateBtn = $('generateBtn');
 
 let selectedFiles = [];
 
-// ========== GLOBAL ERROR RECOVERY ==========
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled rejection:', event.reason);
-  if (statusText) {
-    statusText.classList.remove('hidden');
-    statusText.innerHTML = `⚠️ เกิดข้อผิดพลาด: ${event.reason?.message || 'ไม่ทราบสาเหตุ'}`;
-    setTimeout(() => statusText.classList.add('hidden'), 5000);
-  }
-  event.preventDefault();
-});
+// ========== UTILITY: Debounce ==========
+function debounce(fn, delay) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 
 // ========== TOAST (แทน alert) ==========
 function showToast(msg, type = 'info') {
@@ -46,19 +42,6 @@ function showToast(msg, type = 'info') {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
-
-// ========== UTILITY: Debounce ==========
-function debounce(fn, delay) {
-  let timer;
-  return function (...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
-
-// ========== UTILITY: Cache (sessionStorage) ==========
-function getCache(key) { return sessionStorage.getItem(key); }
-function setCache(key, value) { sessionStorage.setItem(key, value); }
 
 // ========== DUPLICATE NAME CHECK ==========
 function checkDuplicateName(name) {
@@ -86,32 +69,14 @@ function updateFilename() {
   filenameInput.value = `${yyyymmdd}-${category}-${brand}-${count}img`;
 }
 
-// ========== MEMORY-SAFE OBJECT URL TRACKING ==========
-const objectURLs = new Set();
-function createSafeObjectURL(file) {
-  const url = URL.createObjectURL(file);
-  objectURLs.add(url);
-  return url;
-}
-function revokeAllObjectURLs() {
-  objectURLs.forEach(url => URL.revokeObjectURL(url));
-  objectURLs.clear();
-}
-// Revoke all on page unload to prevent memory leak
-window.addEventListener('pagehide', revokeAllObjectURLs);
-window.addEventListener('beforeunload', revokeAllObjectURLs);
-
 // ========== IMAGE UPLOAD & PREVIEW ==========
 uploadBtn?.addEventListener('click', () => fileInput.click());
 
 function renderPreview() {
   if (!previewGrid) return;
-
-  // Revoke old URLs before re-render
   previewGrid.querySelectorAll('img').forEach(img => {
     if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
   });
-
   previewGrid.innerHTML = '';
 
   if (selectedFiles.length === 0) {
@@ -126,24 +91,19 @@ function renderPreview() {
   selectedFiles.forEach((fileObj, idx) => {
     const wrap = document.createElement('div');
     wrap.className = 'relative aspect-square bg-slate-100 rounded-xl overflow-hidden group';
-
     const img = document.createElement('img');
-    img.src = createSafeObjectURL(fileObj.file);
+    img.src = fileObj.url;
     img.alt = 'Product image';
     img.className = 'w-full h-full object-cover';
-    img.setAttribute('loading', 'lazy');
-
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition';
     btn.textContent = '×';
-    btn.setAttribute('aria-label', 'Remove image');
     btn.onclick = () => {
       URL.revokeObjectURL(img.src);
       selectedFiles.splice(idx, 1);
       renderPreview();
     };
-
     wrap.appendChild(img);
     wrap.appendChild(btn);
     previewGrid.appendChild(wrap);
@@ -151,25 +111,22 @@ function renderPreview() {
   updateFilename();
 }
 
-// ========== FILE INPUT ==========
-const MAX_FILES = 10;
-const MAX_FILE_SIZE_MB = 6;
 fileInput?.addEventListener('change', (e) => {
   const files = Array.from(e.target.files || []);
+  if (selectedFiles.length + files.length > 10) {
+    showToast('อัปโหลดได้สูงสุด 10 รูป', 'error');
+    return;
+  }
   files.forEach(f => {
-    if (selectedFiles.length >= MAX_FILES) {
-      showToast(`อัปโหลดได้สูงสุด ${MAX_FILES} รูป`, 'error');
-      return;
-    }
     if (!f.type.startsWith('image/')) {
       showToast('กรุณาเลือกไฟล์รูปภาพเท่านั้น', 'error');
       return;
     }
-    if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      showToast(`ไฟล์ต้องไม่เกิน ${MAX_FILE_SIZE_MB}MB (${(f.size / 1024 / 1024).toFixed(1)}MB)`, 'error');
+    if (f.size > 6 * 1024 * 1024) {
+      showToast('ไฟล์ต้องไม่เกิน 6MB', 'error');
       return;
     }
-    selectedFiles.push({ url: createSafeObjectURL(f), file: f });
+    selectedFiles.push({ url: URL.createObjectURL(f), file: f });
   });
   fileInput.value = '';
   renderPreview();
@@ -185,17 +142,9 @@ const promptTemplates = {
   'default': 'Professional product video of {brand}. Clean studio background, 360-degree slow rotation, sharp focus on product details.'
 };
 
-// ========== AI PROMPT (with AbortController + cache + retry) ==========
+// ========== AI PROMPT ==========
 let lastOriginalPrompt = '';
-let promptAbortController = null;
-
 const handleGenPrompt = async () => {
-  // Abort previous request if still pending
-  if (promptAbortController) {
-    promptAbortController.abort();
-    promptAbortController = null;
-  }
-
   const brand = brandInput?.value.trim() || 'สินค้า';
   const category = categorySelect?.value || 'default';
   let baseTemplate = promptTemplates[category] || promptTemplates['default'];
@@ -203,68 +152,34 @@ const handleGenPrompt = async () => {
   lastOriginalPrompt = baseTemplate;
   promptInput.value = baseTemplate;
 
-  // Check cache
-  const cacheKey = `prompt_${brand}_${category}`;
-  const cached = getCache(cacheKey);
-  if (cached) {
-    promptInput.value = cached;
-    if (promptStatus) promptStatus.innerHTML = '📦 ใช้จาก cache (ไม่เรียก AI)';
-    if (copyPromptBtn) copyPromptBtn.classList.remove('hidden');
-    if (undoPromptBtn) undoPromptBtn.classList.remove('hidden');
-    genPromptBtn.innerHTML = '✨ แต่งใหม่';
-    return;
-  }
-
   genPromptBtn.disabled = true;
   genPromptBtn.innerHTML = '⚙️ AI กำลังแต่ง...';
   if (promptStatus) promptStatus.innerHTML = '⏳ กำลังเรียก AI...';
-  promptInput.classList.add('ring-2', 'ring-purple-400');
-
-  promptAbortController = new AbortController();
-
-  const MAX_RETRIES = 2;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const res = await fetch('/api/prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_prompt: baseTemplate, category }),
-        signal: promptAbortController.signal,
-      });
-
-      const data = await res.json();
-      if (res.ok && data.result) {
-        promptInput.value = data.result;
-        setCache(cacheKey, data.result);
-        if (promptStatus) promptStatus.innerHTML = '✅ AI แต่งเสร็จ (cached)';
-        if (copyPromptBtn) copyPromptBtn.classList.remove('hidden');
-        if (undoPromptBtn) undoPromptBtn.classList.remove('hidden');
-        genPromptBtn.innerHTML = '✨ แต่งใหม่';
-        break;
-      }
-      throw new Error(data.error || 'ไม่สามารถแต่ง Prompt ได้');
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        if (promptStatus) promptStatus.innerHTML = '⏹️ ยกเลิกแล้ว';
-        break;
-      }
-      if (attempt === MAX_RETRIES) {
-        console.error('Prompt error after retries:', err);
-        promptInput.value = baseTemplate;
-        if (promptStatus) promptStatus.innerHTML = '⚠️ ใช้ต้นฉบับ (AI ไม่พร้อม)';
-        genPromptBtn.innerHTML = '✨ ลองใหม่';
-      } else {
-        if (promptStatus) promptStatus.innerHTML = `🔄 กำลังลองใหม่ (${attempt + 1}/${MAX_RETRIES})...`;
-        await new Promise(r => setTimeout(r, 1000));
-      }
+  
+  try {
+    const res = await fetch('/api/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: baseTemplate, category }),
+    });
+    const data = await res.json();
+    if (res.ok && data.result) {
+      promptInput.value = data.result;
+      if (promptStatus) promptStatus.innerHTML = '✅ AI แต่งเสร็จ';
+      if (copyPromptBtn) copyPromptBtn.classList.remove('hidden');
+      if (undoPromptBtn) undoPromptBtn.classList.remove('hidden');
+      genPromptBtn.innerHTML = '✨ แต่งใหม่';
+    } else {
+      throw new Error(data.error || 'error');
     }
+  } catch (err) {
+    console.error('Prompt error:', err);
+    if (promptStatus) promptStatus.innerHTML = '⚠️ ใช้ต้นฉบับ (AI ไม่พร้อม)';
+    genPromptBtn.innerHTML = '✨ ลองใหม่';
+  } finally {
+    genPromptBtn.disabled = false;
   }
-
-  genPromptBtn.disabled = false;
-  promptAbortController = null;
-  setTimeout(() => promptInput.classList.remove('ring-2', 'ring-purple-400'), 1000);
 };
-
 genPromptBtn?.addEventListener('click', debounce(handleGenPrompt, 500));
 
 // ========== COPY / UNDO PROMPT ==========
@@ -279,15 +194,8 @@ undoPromptBtn?.addEventListener('click', () => {
   }
 });
 
-// ========== AI CAPTION (with AbortController + cache) ==========
-let postAbortController = null;
-
+// ========== AI CAPTION ==========
 const handleGenPost = async () => {
-  if (postAbortController) {
-    postAbortController.abort();
-    postAbortController = null;
-  }
-
   const prompt = promptInput.value.trim();
   if (!prompt) {
     showToast('สร้าง Prompt ก่อน', 'error');
@@ -295,54 +203,33 @@ const handleGenPost = async () => {
   }
   const brand = brandInput?.value.trim() || 'สินค้า';
   const category = categorySelect?.value || 'default';
-  const cacheKey = `post_${brand}_${category}_${prompt.substring(0, 50)}`;
-
-  const cached = getCache(cacheKey);
-  if (cached) {
-    postOutput.value = cached;
-    if (copyPostBtn) copyPostBtn.classList.remove('hidden');
-    genPostBtn.innerHTML = '✅ เสร็จ (cache)';
-    return;
-  }
-
+  
   genPostBtn.disabled = true;
   genPostBtn.innerHTML = '✍️ กำลังเขียน...';
   postOutput.value = '';
-  postAbortController = new AbortController();
-
-  const fallbackPost = `✨ ${brand} สวยโดนใจ! พร้อมส่งจาก Crystal Castle\n\n#CrystalCastle #แฟชั่น #AIvideo`;
-
+  
   try {
     const res = await fetch('/api/post', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, brand, category }),
-      signal: postAbortController.signal,
     });
     const data = await res.json();
     if (data.post) {
       postOutput.value = data.post;
-      setCache(cacheKey, data.post);
       if (copyPostBtn) copyPostBtn.classList.remove('hidden');
       genPostBtn.innerHTML = '✅ เสร็จ';
     } else {
       throw new Error('Fallback');
     }
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      genPostBtn.innerHTML = '⏹️ ยกเลิก';
-      return;
-    }
-    postOutput.value = fallbackPost;
+  } catch {
+    postOutput.value = `✨ ${brand} สวยโดนใจ! พร้อมส่งจาก @snapzreview\n\n#snapzreview #แฟชั่น #AIvideo`;
     genPostBtn.innerHTML = '⚠️ แบบสำเร็จรูป';
     if (copyPostBtn) copyPostBtn.classList.remove('hidden');
   } finally {
     genPostBtn.disabled = false;
-    postAbortController = null;
-    setTimeout(() => { if (genPostBtn.innerHTML.includes('เสร็จ') || genPostBtn.innerHTML.includes('สำเร็จรูป')) genPostBtn.innerHTML = '📝 Generate Post'; }, 1500);
   }
 };
-
 genPostBtn?.addEventListener('click', debounce(handleGenPost, 500));
 copyPostBtn?.addEventListener('click', () => {
   navigator.clipboard.writeText(postOutput.value);
@@ -350,7 +237,7 @@ copyPostBtn?.addEventListener('click', () => {
   setTimeout(() => { copyPostBtn.innerHTML = '📋 คัดลอกแคปชั่น'; }, 2000);
 });
 
-// ========== GENERATE VIDEO (with reuse upload + progress) ==========
+// ========== GENERATE VIDEO ==========
 let lastUploadedFile = null;
 let lastUploadedUrl = null;
 
@@ -368,34 +255,28 @@ async function generateVideo(engine) {
   if (checkDuplicateName(customFilename)) {
     if (!confirm(`ชื่อ ${customFilename} เคยใช้แล้ว จะสร้างทับไหม?`)) return;
   }
-
-  // Disable all generate buttons
+  
   [genFALBtn, genHFBtn, generateBtn].forEach(b => { if (b) b.disabled = true; });
-
   if (statusText) {
     statusText.classList.remove('hidden');
     statusText.innerHTML = '📤 กำลังอัปโหลดรูป...';
   }
-
+  
   const engineLabel = engine === 'FAL' ? 'FAL Kling' : 'Magic Hour';
-  const waitTime = engine === 'FAL' ? '1-2 นาที' : '3-5 นาที';
-
   try {
     const file = selectedFiles[0].file;
     const fileExt = file.name.split('.').pop();
     const finalFilename = `${customFilename}.${fileExt}`;
     let imageUrl;
-
-    // Reuse upload if same file
+    
     if (lastUploadedFile === file && lastUploadedUrl) {
       imageUrl = lastUploadedUrl;
-      if (statusText) statusText.innerHTML = '📦 ใช้รูปที่อัปโหลดแล้ว (cache)';
+      if (statusText) statusText.innerHTML = '📦 ใช้รูปที่อัปโหลดแล้ว';
     } else {
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'x-filename': finalFilename, 'Content-Type': file.type },
         body: file,
-        signal: AbortSignal.timeout(30000),
       });
       if (!uploadRes.ok) throw new Error('อัปโหลดรูปไม่สำเร็จ');
       const data = await uploadRes.json();
@@ -403,22 +284,22 @@ async function generateVideo(engine) {
       lastUploadedFile = file;
       lastUploadedUrl = imageUrl;
     }
-
+    
     if (statusText) {
-      statusText.innerHTML = `⚡ กำลังสร้างวิดีโอ (${engineLabel}) ประมาณ ${waitTime}...`;
+      statusText.innerHTML = `⚡ กำลังสร้างวิดีโอ (${engineLabel})...`;
     }
-
+    
     const apiUrl = engine === 'FAL' ? '/api/video' : '/api/magichour';
     const genRes = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image_url: imageUrl, prompt, filename: customFilename }),
     });
-
+    
     const data = await genRes.json();
     if (!genRes.ok) throw new Error(data.error || 'สร้างวิดีโอไม่สำเร็จ');
     if (!data.video_url) throw new Error('ไม่ได้รับลิงก์วิดีโอ');
-
+    
     if (statusText) {
       statusText.innerHTML = `✅ สำเร็จ! <a href="${data.video_url}" target="_blank" class="underline text-purple-400">เปิดวิดีโอ</a> | <a href="/artifact.html" class="underline text-emerald-400">ดูผลงาน</a>`;
     }
@@ -436,31 +317,25 @@ async function generateVideo(engine) {
 genFALBtn?.addEventListener('click', debounce(() => generateVideo('FAL'), 1000));
 genHFBtn?.addEventListener('click', debounce(() => generateVideo('HF'), 1000));
 
-// ========== SLIDESHOW GENERATOR (FREE, NO API) ==========
+// ========== SLIDESHOW ==========
 async function generateSlideshow() {
   if (selectedFiles.length < 2) {
-    showToast('ต้องมีอย่างน้อย 2 รูปสำหรับ Slideshow', 'error');
+    showToast('ต้องมีอย่างน้อย 2 รูป', 'error');
     return;
   }
-
   if (statusText) {
     statusText.classList.remove('hidden');
     statusText.innerHTML = '🎞️ กำลังสร้าง Slideshow...';
   }
-
   try {
-    // Create slideshow from selected images using Canvas API (client-side only)
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
     canvas.height = 1920;
     const ctx = canvas.getContext('2d');
-
     const chunks = [];
-    const stream = canvas.captureStream(60); // 60 FPS
+    const stream = canvas.captureStream(30);
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-
     recorder.onstop = () => {
       const blob = new Blob(chunks, { type: 'video/webm' });
       const url = URL.createObjectURL(blob);
@@ -469,51 +344,34 @@ async function generateSlideshow() {
       a.download = `${filenameInput?.value || 'slideshow'}.webm`;
       a.click();
       URL.revokeObjectURL(url);
-
       if (statusText) {
-        statusText.innerHTML = '✅ Slideshow พร้อม! ดาวน์โหลดเริ่มแล้ว';
+        statusText.innerHTML = '✅ Slideshow พร้อม!';
         setTimeout(() => statusText.classList.add('hidden'), 5000);
       }
     };
-
     recorder.start();
-
-    // Draw each image for ~1.5 seconds
     for (let i = 0; i < selectedFiles.length; i++) {
       const img = new Image();
       img.src = selectedFiles[i].url;
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         img.onload = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // Cover-fit
           const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-          const w = img.width * scale;
-          const h = img.height * scale;
-          const x = (canvas.width - w) / 2;
-          const y = (canvas.height - h) / 2;
-          ctx.drawImage(img, x, y, w, h);
+          ctx.drawImage(img, (canvas.width - img.width * scale) / 2, (canvas.height - img.height * scale) / 2, img.width * scale, img.height * scale);
           resolve();
         };
         img.onerror = resolve;
       });
       await new Promise(r => setTimeout(r, 1500));
     }
-
     recorder.stop();
   } catch (err) {
     console.error('Slideshow error:', err);
-    if (statusText) statusText.innerHTML = `❌ สร้าง Slideshow ไม่สำเร็จ: ${err.message}`;
+    showToast('สร้าง Slideshow ไม่สำเร็จ', 'error');
   }
 }
+if (genSlideshowBtn) genSlideshowBtn.addEventListener('click', generateSlideshow);
 
-if (genSlideshowBtn) {
-  genSlideshowBtn.addEventListener('click', generateSlideshow);
-}
-
-// ========== INITIAL RENDER ==========
+// ========== INIT ==========
 renderPreview();
 updateFilename();
-document.addEventListener('DOMContentLoaded', () => {
-  renderPreview();
-  updateFilename();
-});
