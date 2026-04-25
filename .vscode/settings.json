@@ -85,5 +85,9 @@
   "markdownlint.config": {
     "MD013": false,
     "MD033": false
-  }
+  },
+  {
+  // ปิดการตรวจสอบ Workspace Trust (ถ้าเราไว้ใจโปรเจกต์ที่เราเปิดเสมอ)
+  // "security.workspace.trust.enabled": false
+}}
 }
