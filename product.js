@@ -1,4 +1,4 @@
-// product.js — Crystal Castle AI Video Studio
+// product.js — @snapzreview AI Video Studio
 // ========== DOM REFS ==========
 const $ = (id) => document.getElementById(id);
 const fileInput = $('fileInput');
@@ -9,7 +9,9 @@ const promptInput = $('promptInput');
 const genPromptBtn = $('genPromptBtn');
 const genFALBtn = $('genFALBtn');
 const genHFBtn = $('genHFBtn');
-const genSlideshowBtn = $('genSlideshowBtn');
+const genIntroBtn = $('genIntroBtn');
+const genCTABtn = $('genCTABtn');
+const genThumbnailBtn = $('genThumbnailBtn');
 const statusText = $('statusText');
 const categorySelect = $('categorySelect');
 const brandInput = $('brandInput');
@@ -21,8 +23,27 @@ const genPostBtn = $('genPostBtn');
 const postOutput = $('postOutput');
 const copyPostBtn = $('copyPostBtn');
 const generateBtn = $('generateBtn');
+const tiktokBtn = $('tiktokBtn');
+const tiktokInputWrap = $('tiktokInputWrap');
 
 let selectedFiles = [];
+
+// ========== GLOBAL ERROR RECOVERY ==========
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection:', event.reason);
+  showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+  event.preventDefault();
+});
+
+// ========== TOAST ==========
+function showToast(msg, type = 'info') {
+  const toast = document.createElement('div');
+  const colors = { info: 'bg-blue-600', error: 'bg-red-600', success: 'bg-green-600' };
+  toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-white text-sm shadow-lg ${colors[type] || colors.info}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
 
 // ========== UTILITY: Debounce ==========
 function debounce(fn, delay) {
@@ -31,16 +52,6 @@ function debounce(fn, delay) {
     clearTimeout(timer);
     timer = setTimeout(() => fn.apply(this, args), delay);
   };
-}
-
-// ========== TOAST (แทน alert) ==========
-function showToast(msg, type = 'info') {
-  const toast = document.createElement('div');
-  const colors = { info: 'bg-blue-600', error: 'bg-red-600', success: 'bg-green-600' };
-  toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-white text-sm shadow-lg ${colors[type] || colors.info}`;
-  toast.textContent = msg;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
 }
 
 // ========== DUPLICATE NAME CHECK ==========
@@ -132,6 +143,12 @@ fileInput?.addEventListener('change', (e) => {
   renderPreview();
 });
 
+// ========== TIKTOK HANDLER ==========
+tiktokBtn?.addEventListener('click', () => {
+  tiktokInputWrap.classList.toggle('hidden');
+  tiktokInputWrap.querySelector('input')?.focus();
+});
+
 // ========== PROMPT TEMPLATES ==========
 const promptTemplates = {
   'Menswear': 'Professional fashion video of {brand} menswear. Slow cinematic pan around male model, sharp focus on fabric texture and fit. Clean white studio background, soft natural lighting.',
@@ -142,9 +159,17 @@ const promptTemplates = {
   'default': 'Professional product video of {brand}. Clean studio background, 360-degree slow rotation, sharp focus on product details.'
 };
 
-// ========== AI PROMPT ==========
+// ========== AI PROMPT (with AbortController + retry) ==========
 let lastOriginalPrompt = '';
+let promptAbortController = null;
+
 const handleGenPrompt = async () => {
+  // Abort previous request
+  if (promptAbortController) {
+    promptAbortController.abort();
+    promptAbortController = null;
+  }
+
   const brand = brandInput?.value.trim() || 'สินค้า';
   const category = categorySelect?.value || 'default';
   let baseTemplate = promptTemplates[category] || promptTemplates['default'];
@@ -154,38 +179,53 @@ const handleGenPrompt = async () => {
 
   genPromptBtn.disabled = true;
   genPromptBtn.innerHTML = '⚙️ AI กำลังแต่ง...';
-  if (promptStatus) promptStatus.innerHTML = '⏳ กำลังเรียก AI...';
-  
-  try {
-    const res = await fetch('/api/prompt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: baseTemplate, category }),
-    });
-    const data = await res.json();
-    if (res.ok && data.result) {
-      promptInput.value = data.result;
-      if (promptStatus) promptStatus.innerHTML = '✅ AI แต่งเสร็จ';
-      if (copyPromptBtn) copyPromptBtn.classList.remove('hidden');
-      if (undoPromptBtn) undoPromptBtn.classList.remove('hidden');
-      genPromptBtn.innerHTML = '✨ แต่งใหม่';
-    } else {
-      throw new Error(data.error || 'error');
-    }
-  } catch (err) {
-    console.error('Prompt error:', err);
-    if (promptStatus) promptStatus.innerHTML = '⚠️ ใช้ต้นฉบับ (AI ไม่พร้อม)';
-    genPromptBtn.innerHTML = '✨ ลองใหม่';
-  } finally {
-    genPromptBtn.disabled = false;
+  if (promptStatus) {
+    promptStatus.innerHTML = '⏳ กำลังเรียก AI...';
+    promptStatus.querySelector('span').textContent = '';
   }
+
+  promptAbortController = new AbortController();
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch('/api/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: baseTemplate, category }),
+        signal: promptAbortController.signal,
+      });
+      const data = await res.json();
+      if (res.ok && data.result) {
+        promptInput.value = data.result;
+        if (promptStatus) promptStatus.innerHTML = '✅ AI แต่งเสร็จ';
+        if (copyPromptBtn) copyPromptBtn.classList.remove('hidden');
+        if (undoPromptBtn) undoPromptBtn.classList.remove('hidden');
+        genPromptBtn.innerHTML = '✨ แต่งใหม่';
+        break;
+      }
+      throw new Error(data.error || 'AI error');
+    } catch (err) {
+      if (err.name === 'AbortError') break;
+      if (attempt === 1) {
+        console.error('Prompt error after retry:', err);
+        if (promptStatus) promptStatus.innerHTML = '⚠️ ใช้ต้นฉบับ (AI ไม่พร้อม)';
+        genPromptBtn.innerHTML = '✨ ลองใหม่';
+      } else {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+  }
+
+  genPromptBtn.disabled = false;
+  promptAbortController = null;
 };
 genPromptBtn?.addEventListener('click', debounce(handleGenPrompt, 500));
 
 // ========== COPY / UNDO PROMPT ==========
 copyPromptBtn?.addEventListener('click', () => {
-  navigator.clipboard.writeText(promptInput.value);
-  if (promptStatus) promptStatus.innerHTML = '📋 คัดลอกแล้ว';
+  navigator.clipboard.writeText(promptInput.value).then(() => {
+    showToast('คัดลอกแล้ว', 'success');
+  });
 });
 undoPromptBtn?.addEventListener('click', () => {
   if (lastOriginalPrompt) {
@@ -195,7 +235,14 @@ undoPromptBtn?.addEventListener('click', () => {
 });
 
 // ========== AI CAPTION ==========
+let postAbortController = null;
+
 const handleGenPost = async () => {
+  if (postAbortController) {
+    postAbortController.abort();
+    postAbortController = null;
+  }
+
   const prompt = promptInput.value.trim();
   if (!prompt) {
     showToast('สร้าง Prompt ก่อน', 'error');
@@ -203,16 +250,18 @@ const handleGenPost = async () => {
   }
   const brand = brandInput?.value.trim() || 'สินค้า';
   const category = categorySelect?.value || 'default';
-  
+
   genPostBtn.disabled = true;
   genPostBtn.innerHTML = '✍️ กำลังเขียน...';
   postOutput.value = '';
-  
+  postAbortController = new AbortController();
+
   try {
     const res = await fetch('/api/post', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, brand, category }),
+      signal: postAbortController.signal,
     });
     const data = await res.json();
     if (data.post) {
@@ -220,28 +269,34 @@ const handleGenPost = async () => {
       if (copyPostBtn) copyPostBtn.classList.remove('hidden');
       genPostBtn.innerHTML = '✅ เสร็จ';
     } else {
-      throw new Error('Fallback');
+      throw new Error('No post');
     }
-  } catch {
+  } catch (err) {
+    if (err.name === 'AbortError') return;
     postOutput.value = `✨ ${brand} สวยโดนใจ! พร้อมส่งจาก @snapzreview\n\n#snapzreview #แฟชั่น #AIvideo`;
     genPostBtn.innerHTML = '⚠️ แบบสำเร็จรูป';
     if (copyPostBtn) copyPostBtn.classList.remove('hidden');
   } finally {
     genPostBtn.disabled = false;
+    postAbortController = null;
   }
 };
 genPostBtn?.addEventListener('click', debounce(handleGenPost, 500));
 copyPostBtn?.addEventListener('click', () => {
-  navigator.clipboard.writeText(postOutput.value);
-  copyPostBtn.innerHTML = '✅ คัดลอกแล้ว';
-  setTimeout(() => { copyPostBtn.innerHTML = '📋 คัดลอกแคปชั่น'; }, 2000);
+  navigator.clipboard.writeText(postOutput.value).then(() => showToast('คัดลอกแล้ว', 'success'));
 });
 
-// ========== GENERATE VIDEO ==========
+// ========== GENERATE VIDEO (reuse upload + AbortController) ==========
 let lastUploadedFile = null;
 let lastUploadedUrl = null;
+let videoAbortController = null;
 
 async function generateVideo(engine) {
+  if (videoAbortController) {
+    videoAbortController.abort();
+  }
+  videoAbortController = new AbortController();
+
   if (selectedFiles.length === 0) {
     showToast('กรุณาอัปโหลดรูปสินค้าก่อน', 'error');
     return;
@@ -255,28 +310,29 @@ async function generateVideo(engine) {
   if (checkDuplicateName(customFilename)) {
     if (!confirm(`ชื่อ ${customFilename} เคยใช้แล้ว จะสร้างทับไหม?`)) return;
   }
-  
+
   [genFALBtn, genHFBtn, generateBtn].forEach(b => { if (b) b.disabled = true; });
   if (statusText) {
     statusText.classList.remove('hidden');
     statusText.innerHTML = '📤 กำลังอัปโหลดรูป...';
   }
-  
+
   const engineLabel = engine === 'FAL' ? 'FAL Kling' : 'Magic Hour';
+
   try {
     const file = selectedFiles[0].file;
-    const fileExt = file.name.split('.').pop();
-    const finalFilename = `${customFilename}.${fileExt}`;
     let imageUrl;
-    
+
+    // Reuse upload if same file
     if (lastUploadedFile === file && lastUploadedUrl) {
       imageUrl = lastUploadedUrl;
       if (statusText) statusText.innerHTML = '📦 ใช้รูปที่อัปโหลดแล้ว';
     } else {
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'x-filename': finalFilename, 'Content-Type': file.type },
+        headers: { 'x-filename': customFilename, 'Content-Type': file.type },
         body: file,
+        signal: videoAbortController.signal,
       });
       if (!uploadRes.ok) throw new Error('อัปโหลดรูปไม่สำเร็จ');
       const data = await uploadRes.json();
@@ -284,32 +340,38 @@ async function generateVideo(engine) {
       lastUploadedFile = file;
       lastUploadedUrl = imageUrl;
     }
-    
+
     if (statusText) {
       statusText.innerHTML = `⚡ กำลังสร้างวิดีโอ (${engineLabel})...`;
     }
-    
+
     const apiUrl = engine === 'FAL' ? '/api/video' : '/api/magichour';
     const genRes = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image_url: imageUrl, prompt, filename: customFilename }),
+      signal: videoAbortController.signal,
     });
-    
+
     const data = await genRes.json();
     if (!genRes.ok) throw new Error(data.error || 'สร้างวิดีโอไม่สำเร็จ');
     if (!data.video_url) throw new Error('ไม่ได้รับลิงก์วิดีโอ');
-    
+
     if (statusText) {
       statusText.innerHTML = `✅ สำเร็จ! <a href="${data.video_url}" target="_blank" class="underline text-purple-400">เปิดวิดีโอ</a> | <a href="/artifact.html" class="underline text-emerald-400">ดูผลงาน</a>`;
     }
     saveFilename(customFilename);
   } catch (err) {
+    if (err.name === 'AbortError') {
+      if (statusText) statusText.innerHTML = '⏹️ ยกเลิกแล้ว';
+      return;
+    }
     console.error('Generate error:', err);
     if (statusText) statusText.innerHTML = `❌ เกิดข้อผิดพลาด: ${err.message}`;
     showToast(`สร้างวิดีโอไม่สำเร็จ: ${err.message}`, 'error');
   } finally {
     [genFALBtn, genHFBtn, generateBtn].forEach(b => { if (b) b.disabled = false; });
+    videoAbortController = null;
     setTimeout(() => { if (statusText) statusText.classList.add('hidden'); }, 15000);
   }
 }
@@ -317,60 +379,11 @@ async function generateVideo(engine) {
 genFALBtn?.addEventListener('click', debounce(() => generateVideo('FAL'), 1000));
 genHFBtn?.addEventListener('click', debounce(() => generateVideo('HF'), 1000));
 
-// ========== SLIDESHOW ==========
-async function generateSlideshow() {
-  if (selectedFiles.length < 2) {
-    showToast('ต้องมีอย่างน้อย 2 รูป', 'error');
-    return;
-  }
-  if (statusText) {
-    statusText.classList.remove('hidden');
-    statusText.innerHTML = '🎞️ กำลังสร้าง Slideshow...';
-  }
-  try {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1920;
-    const ctx = canvas.getContext('2d');
-    const chunks = [];
-    const stream = canvas.captureStream(30);
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-    recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filenameInput?.value || 'slideshow'}.webm`;
-      a.click();
-      URL.revokeObjectURL(url);
-      if (statusText) {
-        statusText.innerHTML = '✅ Slideshow พร้อม!';
-        setTimeout(() => statusText.classList.add('hidden'), 5000);
-      }
-    };
-    recorder.start();
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const img = new Image();
-      img.src = selectedFiles[i].url;
-      await new Promise(resolve => {
-        img.onload = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-          ctx.drawImage(img, (canvas.width - img.width * scale) / 2, (canvas.height - img.height * scale) / 2, img.width * scale, img.height * scale);
-          resolve();
-        };
-        img.onerror = resolve;
-      });
-      await new Promise(r => setTimeout(r, 1500));
-    }
-    recorder.stop();
-  } catch (err) {
-    console.error('Slideshow error:', err);
-    showToast('สร้าง Slideshow ไม่สำเร็จ', 'error');
-  }
-}
-if (genSlideshowBtn) genSlideshowBtn.addEventListener('click', generateSlideshow);
+// ========== PLACEHOLDER สำหรับปุ่มอื่นๆ ==========
+genIntroBtn?.addEventListener('click', () => showToast('ฟีเจอร์ Intro กำลังพัฒนา', 'info'));
+genCTABtn?.addEventListener('click', () => showToast('ฟีเจอร์ CTA กำลังพัฒนา', 'info'));
+genThumbnailBtn?.addEventListener('click', () => showToast('ฟีเจอร์ Thumbnail กำลังพัฒนา', 'info'));
+generateBtn?.addEventListener('click', () => genFALBtn?.click());
 
 // ========== INIT ==========
 renderPreview();

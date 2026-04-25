@@ -10,43 +10,36 @@ const supabase = createClient(
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // รองรับทั้ง user_prompt (จาก index.html) และ prompt (จาก client อื่น)
   const userPrompt = req.body.user_prompt || req.body.prompt;
-  if (!userPrompt) {
-    return res.status(400).json({ error: 'Missing prompt (send as user_prompt or prompt)' });
-  }
+  if (!userPrompt) return res.status(400).json({ error: 'Missing prompt' });
 
   const start = Date.now();
+  let result = '';
+  let model = 'groq/llama3-8b-8192';
 
   try {
-    const chatCompletion = await groq.chat.completions.create({
+    const chat = await groq.chat.completions.create({
       messages: [{ role: 'user', content: userPrompt }],
       model: 'llama3-8b-8192',
     });
+    result = chat.choices[0]?.message?.content || '';
 
-    const latency = Date.now() - start;
-    const responseText = chatCompletion.choices[0]?.message?.content || '';
-
-    // บันทึก Log ลงตาราง groq_logs
-    const { error: logError } = await supabase.from('groq_logs').insert({
-      request_id: chatCompletion.id,
-      model: 'llama3-8b-8192',
+    // Log to Supabase
+    await supabase.from('groq_logs').insert({
+      request_id: chat.id,
+      model,
       prompt: userPrompt,
-      response: responseText,
-      latency_ms: latency,
-    });
+      response: result,
+      latency_ms: Date.now() - start,
+    }).catch(e => console.error('Log insert error:', e));
 
-    if (logError) {
-      console.error('Log insert error:', logError);
-    }
-
-    return res.status(200).json({ result: responseText, latency });
-  } catch (err) {
-    console.error('Groq API error:', err);
-    return res.status(500).json({ error: err.message });
+  } catch (groqErr) {
+    console.error('Groq failed:', groqErr.message);
+    // Fallback: ยังไม่ทำ (แต่เตรียมไว้)
+    return res.status(500).json({ error: `Groq failed: ${groqErr.message}` });
   }
+
+  return res.status(200).json({ result, latency: Date.now() - start, model });
 }

@@ -7,9 +7,7 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { data, error } = await supabase
@@ -19,10 +17,9 @@ export default async function handler(req, res) {
       .limit(50);
 
     if (error) throw error;
-
     return res.status(200).json({ logs: data });
   } catch (err) {
-    console.error('Error fetching Groq logs:', err);
+    console.error('GET /api/get-logs error:', err);
     return res.status(500).json({ error: err.message });
   }
 }

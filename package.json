@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.104.1"
   },
   "devDependencies": {
     "jsdoc": "^4.0.2"

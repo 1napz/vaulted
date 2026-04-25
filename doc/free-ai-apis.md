@@ -25,7 +25,14 @@
 3. ติดตั้ง SDK: `npm install @google/generative-ai`
 4. ใช้งานใน API Route:
    ```javascript
+<<<<<<< HEAD
    import { GoogleGenerativeAI } from '@google/generative-ai'
    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
    const result = await model.generateContent('Your prompt')
+=======
+      import { GoogleGenerativeAI } from '@google/generative-ai'
+         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+               const result = await model.generateContent('Your prompt')
+>>>>>>> 9302e36 (update-docs)
