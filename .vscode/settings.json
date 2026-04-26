@@ -10,7 +10,7 @@
   "editor.suggestSelection": "first",
   "editor.inlineSuggest.enabled": true,
 
-  // สำหรับไฟล์ HTML/JS ใช้ Prettier
+ 
   "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
