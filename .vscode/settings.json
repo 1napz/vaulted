@@ -76,15 +76,14 @@
   "vsintellicode.features.apiExamples": true,
   "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
 
-  Security
+ 
   "extensions.autoUpdate": true,
   "extensions.verifySignature": true,
 
-   Markdown 
   "markdownlint.config": {
     "MD013": false,
     "MD033": false
   },
   { "security.workspace.trust.enabled": false
 }}
-}
+
