@@ -4,7 +4,6 @@ node_modules/
 .pnp.js
 
 # Temporary and checkpoint files (จาก Codespaces / Jupyter)
-untitled*
 *.checkpoint*
 *.ipynb_checkpoints*
 
@@ -23,7 +22,6 @@ build
 dist
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
